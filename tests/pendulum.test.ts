@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { solveLinear } from '../src/sim/pendulum'
+import { pendulumDeriv, solveLinear } from '../src/sim/pendulum'
 
 describe('solveLinear', () => {
   it('solves the identity system', () => {
@@ -33,5 +33,38 @@ describe('solveLinear', () => {
     solveLinear(A, b)
     expect(A).toEqual([[0, 1], [1, 0]])
     expect(b).toEqual([2, 3])
+  })
+})
+
+describe('pendulumDeriv', () => {
+  it('n = 1 reduces to the simple pendulum omegaDot = -sin(theta)', () => {
+    const dy = pendulumDeriv(1)(0, [0.7, 0.3])
+    expect(dy).toHaveLength(2)
+    expect(dy[0]).toBeCloseTo(0.3, 12)
+    expect(dy[1]).toBeCloseTo(-Math.sin(0.7), 12)
+  })
+  it('hanging at rest is stationary (n = 3)', () => {
+    const dy = pendulumDeriv(3)(0, [0, 0, 0, 0, 0, 0])
+    for (const c of dy) expect(c).toBeCloseTo(0, 12)
+  })
+  it('n = 2 matches the closed-form double pendulum', () => {
+    // absolute angles, equal m = l = 1, g = 1, d = t1 - t2:
+    // M = [[2, cos d], [cos d, 1]]
+    // b = [-sin(d)*w2^2 - 2*sin t1, sin(d)*w1^2 - sin t2]
+    const t1 = 0.5
+    const t2 = -0.3
+    const w1 = 0.2
+    const w2 = -0.7
+    const d = t1 - t2
+    const b1 = -Math.sin(d) * w2 * w2 - 2 * Math.sin(t1)
+    const b2 = Math.sin(d) * w1 * w1 - Math.sin(t2)
+    const det = 2 - Math.cos(d) * Math.cos(d)
+    const a1 = (b1 - Math.cos(d) * b2) / det
+    const a2 = (2 * b2 - Math.cos(d) * b1) / det
+    const dy = pendulumDeriv(2)(0, [t1, t2, w1, w2])
+    expect(dy[0]).toBeCloseTo(w1, 12)
+    expect(dy[1]).toBeCloseTo(w2, 12)
+    expect(dy[2]).toBeCloseTo(a1, 12)
+    expect(dy[3]).toBeCloseTo(a2, 12)
   })
 })
