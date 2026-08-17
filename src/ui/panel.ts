@@ -14,13 +14,13 @@ export const fmt = (x: number, digits = 2): string => {
 export const CAPTIONS: Record<Tab, string> = {
   lorenz:
     'Same equations, same integrator: copies one part in a million apart ' +
-    'still split. Drop ρ below ~24.74 and the strange attractor dies.',
+    'still split. Drop \u03c1 below ~24.74 and the strange attractor dies.',
   pendulum:
     'Pose the chain, release from rest. The copies obey identical equations, ' +
     'yet the tips fly apart. Normalized units, m = l = g = 1.',
   nbody:
     'Planar gravity with a softened kernel, G = 1. Nudge the selected body ' +
-    'by ε and the ghost systems drift into different futures.',
+    'by \u03b5 and the ghost systems drift into different futures.',
 }
 
 const lambdaLine = (s: AppState): string => {
@@ -28,22 +28,22 @@ const lambdaLine = (s: AppState): string => {
   const cutoff = FIT_FRACTION * stateExtent(ref)
   const fit = lyapunovFit(separation(ref, s.ensemble.copies[0]), cutoff)
   const lam = fit ? fmt(fit.lambda) : 'n/a'
-  return `δ(t) ≈ δ0·e^(λ·t), λ ≈ ${lam}`
+  return `\u03b4(t) \u2248 \u03b40\u00b7e^(\u03bb\u00b7t), \u03bb \u2248 ${lam}`
 }
 
 export const formulasFor = (s: AppState): string[] => {
   switch (s.tab) {
     case 'lorenz':
       return [
-        `x' = σ·(y − x), σ = ${fmt(CLASSIC.sigma)}`,
-        `y' = x·(ρ − z) − y, ρ = ${fmt(s.lorenz.rho)}`,
-        `z' = x·y − β·z, β = ${fmt(CLASSIC.beta)}`,
+        `x' = \u03c3\u00b7(y \u2212 x), \u03c3 = ${fmt(CLASSIC.sigma)}`,
+        `y' = x\u00b7(\u03c1 \u2212 z) \u2212 y, \u03c1 = ${fmt(s.lorenz.rho)}`,
+        `z' = x\u00b7y \u2212 \u03b2\u00b7z, \u03b2 = ${fmt(CLASSIC.beta)}`,
         lambdaLine(s),
       ]
     case 'pendulum': {
       const y = sampleAt(s.ensemble.reference, s.playback.t)
       return [
-        `n = ${s.pendulum.n} links, m = l = g = 1, ω(0) = 0`,
+        `n = ${s.pendulum.n} links, m = l = g = 1, \u03c9(0) = 0`,
         `E = T + V = ${fmt(pendulumEnergy(y))}`,
         lambdaLine(s),
       ]

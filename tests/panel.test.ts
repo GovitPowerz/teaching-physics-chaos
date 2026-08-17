@@ -10,7 +10,7 @@ import { sampleAt } from '../src/sim/simulate'
 const expectedLambdaLine = (s: AppState): string => {
   const ref = s.ensemble.reference
   const fit = lyapunovFit(separation(ref, s.ensemble.copies[0]), FIT_FRACTION * stateExtent(ref))
-  return `δ(t) ≈ δ0·e^(λ·t), λ ≈ ${fmt(fit!.lambda)}`
+  return `\u03b4(t) \u2248 \u03b40\u00b7e^(\u03bb\u00b7t), \u03bb \u2248 ${fmt(fit!.lambda)}`
 }
 
 describe('panel formatters', () => {
@@ -22,15 +22,15 @@ describe('panel formatters', () => {
   it('lorenz formulas carry the three ODEs with live rho and the lambda fit', () => {
     const s = createStore().get()
     const lines = formulasFor(s)
-    expect(lines[0]).toBe(`x' = σ·(y − x), σ = 10.00`)
-    expect(lines[1]).toBe(`y' = x·(ρ − z) − y, ρ = 28.00`)
-    expect(lines[2]).toBe(`z' = x·y − β·z, β = 2.67`)
+    expect(lines[0]).toBe(`x' = \u03c3\u00b7(y \u2212 x), \u03c3 = 10.00`)
+    expect(lines[1]).toBe(`y' = x\u00b7(\u03c1 \u2212 z) \u2212 y, \u03c1 = 28.00`)
+    expect(lines[2]).toBe(`z' = x\u00b7y \u2212 \u03b2\u00b7z, \u03b2 = 2.67`)
     expect(lines[3]).toBe(expectedLambdaLine(s))
   })
   it('lorenz rho line tracks patchLorenz', () => {
     const store = createStore()
     store.patchLorenz({ rho: 20 })
-    expect(formulasFor(store.get())[1]).toBe(`y' = x·(ρ − z) − y, ρ = 20.00`)
+    expect(formulasFor(store.get())[1]).toBe(`y' = x\u00b7(\u03c1 \u2212 z) \u2212 y, \u03c1 = 20.00`)
   })
   it('lorenz fitted lambda from the on-attractor default lands in (0.6, 1.2)', () => {
     // default y0 [-1.39, -2.47, 11.86]: measured lambda ~ 0.8603 (canonical 0.906)
@@ -46,7 +46,7 @@ describe('panel formatters', () => {
     store.setTab('pendulum')
     const s = store.get()
     const lines = formulasFor(s)
-    expect(lines[0]).toBe('n = 3 links, m = l = g = 1, ω(0) = 0')
+    expect(lines[0]).toBe('n = 3 links, m = l = g = 1, \u03c9(0) = 0')
     // default pose: all thetas pi/2, all omegas 0 -> T = 0 and V = 0
     expect(lines[1]).toBe('E = T + V = 0.00')
     expect(lines[2]).toBe(expectedLambdaLine(s))
