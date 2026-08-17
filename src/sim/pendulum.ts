@@ -90,6 +90,7 @@ export const jointPositions = (thetas: number[]): Array<{ x: number; y: number }
 export const poseDragThetas = (
   thetas: number[], j: number, tx: number, ty: number,
 ): number[] => {
+  if (!Number.isInteger(j) || j < 0 || j >= thetas.length) return thetas.slice()
   const joints = jointPositions(thetas)
   const bx = j === 0 ? 0 : joints[j - 1].x
   const by = j === 0 ? 0 : joints[j - 1].y

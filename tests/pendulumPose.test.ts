@@ -48,4 +48,10 @@ describe('poseDragThetas', () => {
     poseDragThetas(thetas, 0, 1, 1)
     expect(thetas).toEqual([1, 2])
   })
+
+  it('returns thetas unchanged for an out-of-range j (never throws)', () => {
+    const thetas = [0.3, 0.5]
+    expect(poseDragThetas(thetas, thetas.length, 1, 1)).toEqual(thetas)
+    expect(poseDragThetas(thetas, -1, 1, 1)).toEqual(thetas)
+  })
 })

@@ -65,7 +65,7 @@ export const createStore = (): Store => {
     patchLorenz: (p) => { Object.assign(state.lorenz, p); recompute() },
     patchPendulum: (p) => {
       Object.assign(state.pendulum, p)
-      const n = Math.min(5, Math.max(2, state.pendulum.n))
+      const n = Math.min(5, Math.max(2, Math.round(state.pendulum.n)))
       state.pendulum.n = n
       const old = state.pendulum.thetas
       state.pendulum.thetas = Array.from({ length: n }, (_, i) =>

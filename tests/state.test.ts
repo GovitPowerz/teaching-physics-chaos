@@ -103,6 +103,17 @@ describe('store', () => {
     expect(s.get().pendulum.n).toBe(5)
     expect(s.get().pendulum.thetas.length).toBe(5)
   })
+  it('patchPendulum rounds a non-integer n before clamping', () => {
+    const s = createStore()
+    s.setShared({ K: 2 })
+    s.setTab('pendulum')
+    s.patchPendulum({ n: 3.4 })
+    expect(s.get().pendulum.n).toBe(3)
+    expect(s.get().pendulum.thetas.length).toBe(3)
+    s.patchPendulum({ n: 4.6 })
+    expect(s.get().pendulum.n).toBe(5)
+    expect(s.get().pendulum.thetas.length).toBe(5)
+  })
   it('loadPreset copies preset arrays and resets selection', () => {
     const s = createStore()
     s.setShared({ K: 2 })

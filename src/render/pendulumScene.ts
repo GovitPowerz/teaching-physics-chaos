@@ -90,13 +90,16 @@ export const createPendulumScene = (store: Store): SceneRenderer => {
     const c = sceneCache()
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // trail cutoff index at the current playback time (uniform sample grid)
+    // trail cutoff index at the current playback time (uniform sample grid);
+    // full trail when paused at t=0, truncated at floor(t/dt) once playing or scrubbed
+    const atStart = !s.playback.playing && s.playback.t === 0
     const ref = s.ensemble.reference
     const dtSample = ref.ts.length > 1 ? ref.ts[1] - ref.ts[0] : 1
     const idx = Math.max(0, Math.min(ref.ts.length - 1, Math.round(s.playback.t / dtSample)))
-    const upTo = Math.floor(idx / c.stride)
+    const upToIdx = Math.floor(idx / c.stride)
 
     c.tips.forEach((track, k) => {
+      const upTo = atStart ? track.length - 1 : upToIdx
       const pts = track.slice(0, upTo + 1).map((p) => toScreen(vp(), p))
       if (pts.length > 1)
         drawFadingTrail(ctx, pts, k === 0 ? COLORS.accent : ensembleColor(k - 1), pts.length - 1)
