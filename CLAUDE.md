@@ -16,10 +16,12 @@ short captions per scene, in the style of the siblings).
 
 ## Status
 
-Repo is empty (README stub only). No source yet. The superpowers workflow applies:
-brainstorming -> design spec (`docs/superpowers/specs/`) -> implementation plan
-(`docs/superpowers/plans/`) -> execution. Do not scaffold code before the design
-spec is approved.
+No source yet. Design spec (approved):
+`docs/superpowers/specs/2026-08-17-chaos-scenes-design.md`. Implementation plan
+(14 ordered tasks, execute in sequence):
+`docs/superpowers/plans/2026-08-17-chaos-scenes.md`. Execution happens via the
+superpowers subagent-driven-development or executing-plans skill on branch
+`feature/chaos-scenes`.
 
 ## Stack & Commands (inherited from ../kinematics at scaffold time)
 
