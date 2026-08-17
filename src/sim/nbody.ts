@@ -51,3 +51,69 @@ export const nbodyAngularMomentum = (p: NBodyParams, y: number[]): number => {
   }
   return l
 }
+
+export interface NBodyPreset {
+  id: string
+  label: string
+  masses: number[]
+  y0: number[]
+  halfExtent: number
+  tMax: number
+  maxSamples: number
+}
+
+// all presets carry zero net momentum (velocities rounded to 8 decimals)
+export const PRESETS: NBodyPreset[] = [
+  {
+    id: 'figure8',
+    label: 'Figure 8',
+    masses: [1, 1, 1],
+    y0: [
+      0.97000436, -0.24308753, 0.46620368, 0.43236573,
+      -0.97000436, 0.24308753, 0.46620368, 0.43236573,
+      0, 0, -0.93240737, -0.86473146,
+    ],
+    halfExtent: 1.5,
+    tMax: 20,
+    maxSamples: 20000,
+  },
+  {
+    id: 'pythagorean',
+    label: 'Pythagorean',
+    masses: [3, 4, 5],
+    y0: [
+      1, 3, 0, 0,
+      -2, -1, 0, 0,
+      1, -1, 0, 0,
+    ],
+    halfExtent: 4,
+    tMax: 60,
+    maxSamples: 40000,
+  },
+  {
+    id: 'sun2planets',
+    label: 'Sun + 2 planets',
+    masses: [20, 1, 1],
+    y0: [
+      0, 0, 0, -0.05347474,
+      1.5, 0, 0, 3.65148372,
+      -3, 0, 0, -2.5819889,
+    ],
+    halfExtent: 4,
+    tMax: 40,
+    maxSamples: 40000,
+  },
+  {
+    id: 'binaryPlanet',
+    label: 'Binary + planet',
+    masses: [10, 10, 0.01],
+    y0: [
+      0.5, 0, 0, 2.23477763,
+      -0.5, 0, 0, -2.23735833,
+      3, 0, 0, 2.58069855,
+    ],
+    halfExtent: 4,
+    tMax: 40,
+    maxSamples: 40000,
+  },
+]
