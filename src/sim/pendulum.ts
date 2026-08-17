@@ -57,3 +57,30 @@ export const pendulumDeriv = (n: number): Deriv => {
     return [...omegas, ...solveLinear(M, b)]
   }
 }
+
+// T + V; V is zero at the pivot
+export const pendulumEnergy = (y: number[]): number => {
+  const n = y.length / 2
+  let T = 0
+  let V = 0
+  for (let i = 0; i < n; i++) {
+    V -= (n - i) * Math.cos(y[i])
+    for (let j = 0; j < n; j++) {
+      T += 0.5 * (n - Math.max(i, j)) * Math.cos(y[i] - y[j]) * y[n + i] * y[n + j]
+    }
+  }
+  return T + V
+}
+
+// pivot at origin, y up: joint k at (sum sin(theta_i), -sum cos(theta_i)) for i <= k
+export const jointPositions = (thetas: number[]): Array<{ x: number; y: number }> => {
+  const out: Array<{ x: number; y: number }> = []
+  let x = 0
+  let y = 0
+  for (const t of thetas) {
+    x += Math.sin(t)
+    y -= Math.cos(t)
+    out.push({ x, y })
+  }
+  return out
+}

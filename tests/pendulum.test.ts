@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { pendulumDeriv, solveLinear } from '../src/sim/pendulum'
+import { jointPositions, pendulumDeriv, pendulumEnergy, solveLinear } from '../src/sim/pendulum'
+import { simulate } from '../src/sim/simulate'
 
 describe('solveLinear', () => {
   it('solves the identity system', () => {
@@ -66,5 +67,55 @@ describe('pendulumDeriv', () => {
     expect(dy[1]).toBeCloseTo(w2, 12)
     expect(dy[2]).toBeCloseTo(a1, 12)
     expect(dy[3]).toBeCloseTo(a2, 12)
+  })
+})
+
+describe('pendulumEnergy', () => {
+  it('hanging at rest: E = -(3 + 2 + 1) for n = 3', () => {
+    expect(pendulumEnergy([0, 0, 0, 0, 0, 0])).toBeCloseTo(-6, 12)
+  })
+  it('n = 2 hand-computed kinetic + potential', () => {
+    // thetas [0, 0], omegas [1, 1]: mass speeds 1 and 2 -> T = 2.5; V = -3
+    expect(pendulumEnergy([0, 0, 1, 1])).toBeCloseTo(-0.5, 12)
+  })
+  it('energy drift below 1e-4 over the full horizon (n = 3)', () => {
+    const y0 = [Math.PI / 2, Math.PI / 2, Math.PI / 2, 0, 0, 0]
+    const r = simulate(pendulumDeriv(3), y0, { dt: 0.002, tMax: 30 })
+    expect(r.ts[r.ts.length - 1]).toBeCloseTo(30, 9)
+    const e0 = pendulumEnergy(r.ys[0])
+    let maxDrift = 0
+    for (const y of r.ys) {
+      maxDrift = Math.max(maxDrift, Math.abs(pendulumEnergy(y) - e0))
+    }
+    expect(maxDrift).toBeLessThan(1e-4)
+  })
+})
+
+describe('jointPositions', () => {
+  it('single hanging link sits at (0, -1)', () => {
+    const p = jointPositions([0])
+    expect(p).toHaveLength(1)
+    expect(p[0].x).toBeCloseTo(0, 12)
+    expect(p[0].y).toBeCloseTo(-1, 12)
+  })
+  it('horizontal chain at pi/2', () => {
+    const p = jointPositions([Math.PI / 2, Math.PI / 2])
+    expect(p[0].x).toBeCloseTo(1, 12)
+    expect(p[0].y).toBeCloseTo(0, 12)
+    expect(p[1].x).toBeCloseTo(2, 12)
+    expect(p[1].y).toBeCloseTo(0, 12)
+  })
+  it('mixed angles accumulate from the pivot', () => {
+    const p = jointPositions([Math.PI / 2, 0])
+    expect(p[1].x).toBeCloseTo(1, 12)
+    expect(p[1].y).toBeCloseTo(-1, 12)
+  })
+  it('every link has unit length', () => {
+    const p = jointPositions([0.3, -1.2, 2.5])
+    let prev = { x: 0, y: 0 }
+    for (const q of p) {
+      expect(Math.hypot(q.x - prev.x, q.y - prev.y)).toBeCloseTo(1, 12)
+      prev = q
+    }
   })
 })
