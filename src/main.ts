@@ -5,6 +5,7 @@ import { createPanel } from './ui/panel'
 import { createPlayback } from './ui/playback'
 import { createTopbar } from './ui/topbar'
 import { createLorenzScene } from './render/lorenzScene'
+import { createPendulumScene } from './render/pendulumScene'
 
 export interface SceneRenderer {
   mount: (root: HTMLElement) => void
@@ -17,6 +18,7 @@ const sceneRoot = document.getElementById('scene')!
 
 const scenes: Partial<Record<Tab, SceneRenderer>> = {
   lorenz: createLorenzScene(store),
+  pendulum: createPendulumScene(store),
 }
 
 const topbar = createTopbar(store)

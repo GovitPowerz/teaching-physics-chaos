@@ -84,3 +84,16 @@ export const jointPositions = (thetas: number[]): Array<{ x: number; y: number }
   }
   return out
 }
+
+// Pose-by-drag: aim link j at world point (tx, ty); links below j keep their
+// relative angles (they shift by the same delta); links above j are unchanged.
+export const poseDragThetas = (
+  thetas: number[], j: number, tx: number, ty: number,
+): number[] => {
+  const joints = jointPositions(thetas)
+  const bx = j === 0 ? 0 : joints[j - 1].x
+  const by = j === 0 ? 0 : joints[j - 1].y
+  const aim = Math.atan2(tx - bx, -(ty - by))
+  const d = aim - thetas[j]
+  return thetas.map((th, i) => (i >= j ? th + d : th))
+}
