@@ -33,12 +33,18 @@ const kRow = sliderRow('copies K', 2, 10, 1,
   () => store.get().shared.K, (val) => store.setShared({ K: val }))
 const epsRow = sliderRow('log10(epsilon)', -9, -2, 1,
   () => store.get().shared.epsExp, (val) => store.setShared({ epsExp: val }))
+const trailRow = sliderRow('trail x', 0.25, 4, 0.25,
+  () => store.get().fade.windowScale, (v) => store.setFade({ windowScale: v }))
+const fadeRow = sliderRow('fade', 0, 1, 0.05,
+  () => store.get().fade.strength, (v) => store.setFade({ strength: v }))
 kRow.el.classList.add('shared')
 epsRow.el.classList.add('shared')
+trailRow.el.classList.add('shared')
+fadeRow.el.classList.add('shared')
 
 const playbar = document.createElement('div')
 playbar.id = 'playbar'
-playbar.append(playback.el, kRow.el, epsRow.el)
+playbar.append(playback.el, kRow.el, epsRow.el, trailRow.el, fadeRow.el)
 
 const panelRoot = document.getElementById('panel')!
 panelRoot.append(playbar, panel.el)
@@ -58,6 +64,8 @@ store.subscribe(() => {
   playback.render()
   kRow.refresh()
   epsRow.refresh()
+  trailRow.refresh()
+  fadeRow.refresh()
 })
 topbar.render(); panel.render(); playback.render()
 

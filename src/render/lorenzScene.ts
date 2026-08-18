@@ -146,13 +146,15 @@ export const createLorenzScene = (store: Store): SceneRenderer => {
       mapPts(s).forEach((pts, i) =>
         drawTrailMap(ctx, pts, i === 0 ? COLORS.accent : ensembleColor(i - 1), 0.12))
     } else {
-      const windowPts = Math.max(1, Math.round(SCENES.lorenz.fadeWindow / recordedDt))
+      const windowPts = Math.max(1,
+        Math.round(SCENES.lorenz.fadeWindow * s.fade.windowScale / recordedDt))
+      const tailAlpha = 0.05 + 0.85 * (1 - s.fade.strength)
       trails(s).forEach((pts, i) => {
         const upToIdx = Math.max(0, Math.min(pts.length - 1, Math.round(s.playback.t / recordedDt)))
         const start = Math.max(0, upToIdx - windowPts)
         const win = decimate(pts.slice(start, upToIdx + 1), TRAIL_MAX_PTS)
         drawFadingTrail(ctx, win, i === 0 ? COLORS.accent : ensembleColor(i - 1),
-          win.length - 1, win.length - 1)
+          win.length - 1, win.length - 1, tailAlpha)
       })
     }
 

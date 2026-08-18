@@ -12,6 +12,7 @@ export interface AppState {
   pendulum: { n: number; thetas: number[] }
   nbody: { presetId: string; masses: number[]; y0: number[]; selected: number }
   shared: { K: number; epsExp: number }
+  fade: { windowScale: number; strength: number }
   playback: { playing: boolean; t: number; speed: number }
   ensemble: Ensemble
   revision: number
@@ -28,6 +29,7 @@ export interface Store {
   selectBody: (i: number) => void
   setShared: (p: Partial<AppState['shared']>) => void
   setView: (v: View3) => void
+  setFade: (p: Partial<AppState['fade']>) => void
   setPlaying: (p: boolean) => void
   setT: (t: number) => void
   setSpeed: (s: number) => void
@@ -42,6 +44,7 @@ export const createStore = (): Store => {
     pendulum: { n: 3, thetas: [Math.PI / 2, Math.PI / 2, Math.PI / 2] },
     nbody: { presetId: 'figure8', masses: [...f8.masses], y0: [...f8.y0], selected: 0 },
     shared: { K: 5, epsExp: -6 },
+    fade: { windowScale: 1, strength: 1 },
     playback: { playing: false, t: 0, speed: 1 },
     ensemble: { reference: { ts: [], ys: [] }, copies: [] },
     revision: 0,
@@ -94,6 +97,12 @@ export const createStore = (): Store => {
       recompute()
     },
     setView: (v) => { state.lorenz.view = v; notify() },
+    setFade: (p) => {
+      Object.assign(state.fade, p)
+      state.fade.windowScale = Math.min(4, Math.max(0.25, state.fade.windowScale))
+      state.fade.strength = Math.min(1, Math.max(0, state.fade.strength))
+      notify()
+    },
     setPlaying: (p) => { state.playback.playing = p; notify() },
     setT: (t) => {
       state.playback.t = Math.min(duration(state.ensemble.reference), Math.max(0, t))

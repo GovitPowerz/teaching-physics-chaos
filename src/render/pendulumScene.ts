@@ -123,13 +123,15 @@ export const createPendulumScene = (store: Store): SceneRenderer => {
         drawTrailMap(ctx, pts, k === 0 ? COLORS.accent : ensembleColor(k - 1), 0.12))
     } else {
       const idx = Math.max(0, Math.min(ref.ts.length - 1, Math.round(s.playback.t / dtSample)))
-      const windowPts = Math.max(1, Math.round(SCENES.pendulum.fadeWindow / dtSample))
+      const windowPts = Math.max(1,
+        Math.round(SCENES.pendulum.fadeWindow * s.fade.windowScale / dtSample))
+      const tailAlpha = 0.05 + 0.85 * (1 - s.fade.strength)
       const start = Math.max(0, idx - windowPts)
       c.tips.forEach((track, k) => {
         const win = decimate(track.slice(start, idx + 1), TRAIL_MAX_PTS).map((p) => toScreen(vp(), p))
         if (win.length > 1)
           drawFadingTrail(ctx, win, k === 0 ? COLORS.accent : ensembleColor(k - 1),
-            win.length - 1, win.length - 1)
+            win.length - 1, win.length - 1, tailAlpha)
       })
     }
 

@@ -33,7 +33,7 @@ export const decimate = <T,>(pts: T[], maxPts: number): T[] => {
 
 export const drawFadingTrail = (
   ctx: CanvasRenderingContext2D, pts: Array<{ x: number; y: number }>, color: string, upTo: number,
-  windowPts?: number,
+  windowPts?: number, tailAlpha: number = 0.05,
 ): void => {
   const end = Math.min(Math.floor(upTo), pts.length - 1)
   if (end < 1) return
@@ -45,7 +45,7 @@ export const drawFadingTrail = (
   const per = Math.max(1, Math.ceil(span / BUCKETS))
   for (let s0 = start; s0 < end; s0 += per) {
     const stop = Math.min(s0 + per, end)
-    ctx.globalAlpha = 0.05 + 0.85 * ((stop - start) / span)
+    ctx.globalAlpha = tailAlpha + (0.9 - tailAlpha) * ((stop - start) / span)
     ctx.beginPath()
     ctx.moveTo(pts[s0].x, pts[s0].y)
     for (let i = s0 + 1; i <= stop; i++) ctx.lineTo(pts[i].x, pts[i].y)

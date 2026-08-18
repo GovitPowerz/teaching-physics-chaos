@@ -236,7 +236,9 @@ export const createNbodyScene = (store: Store): SceneRenderer => {
     const atStart = !s.playback.playing && t === 0
     const dtSample = ref.ts.length > 1
       ? ref.ts[1] - ref.ts[0] : SCENES.nbody.dt * SCENES.nbody.stride
-    const windowPts = Math.max(1, Math.round(preset().fadeWindow / dtSample))
+    const windowPts = Math.max(1,
+      Math.round(preset().fadeWindow * s.fade.windowScale / dtSample))
+    const tailAlpha = 0.05 + 0.85 * (1 - s.fade.strength)
 
     if (atStart) {
       const m = mapPts()
@@ -253,7 +255,7 @@ export const createNbodyScene = (store: Store): SceneRenderer => {
         const start = Math.max(0, idx - windowPts)
         for (let i = 0; i < n; i++) {
           const win = decimate(tc.copies[k][i].slice(start, idx + 1), TRAIL_MAX_PTS)
-          drawFadingTrail(ctx, win, ensembleColor(k), win.length - 1, win.length - 1)
+          drawFadingTrail(ctx, win, ensembleColor(k), win.length - 1, win.length - 1, tailAlpha)
         }
       })
       if (ref.ts.length >= 2) {
@@ -261,7 +263,7 @@ export const createNbodyScene = (store: Store): SceneRenderer => {
         const start = Math.max(0, idx - windowPts)
         for (let i = 0; i < n; i++) {
           const win = decimate(tc.ref[i].slice(start, idx + 1), TRAIL_MAX_PTS)
-          drawFadingTrail(ctx, win, COLORS.fg, win.length - 1, win.length - 1)
+          drawFadingTrail(ctx, win, COLORS.fg, win.length - 1, win.length - 1, tailAlpha)
         }
       }
     }
