@@ -27,6 +27,8 @@ export interface Store {
   patchNBody: (p: Partial<Pick<AppState['nbody'], 'masses' | 'y0'>>) => void
   loadPreset: (id: string) => void
   selectBody: (i: number) => void
+  addBody: (x: number, y: number) => void
+  removeBody: () => void
   setShared: (p: Partial<AppState['shared']>) => void
   setView: (v: View3) => void
   setFade: (p: Partial<AppState['fade']>) => void
@@ -90,6 +92,29 @@ export const createStore = (): Store => {
       state.nbody.selected = i
       recompute()
     },
+    addBody: (x, y) => {
+      if (state.nbody.masses.length >= 6) { notify(); return }
+      const masses = state.nbody.masses.slice()
+      masses.push(1)
+      const y0 = state.nbody.y0.slice()
+      y0.push(x, y, 0, 0)
+      state.nbody.masses = masses
+      state.nbody.y0 = y0
+      state.nbody.selected = masses.length - 1
+      recompute()
+    },
+    removeBody: () => {
+      if (state.nbody.masses.length <= 2) { notify(); return }
+      const i = state.nbody.selected
+      const masses = state.nbody.masses.slice()
+      masses.splice(i, 1)
+      const y0 = state.nbody.y0.slice()
+      y0.splice(4 * i, 4)
+      state.nbody.masses = masses
+      state.nbody.y0 = y0
+      state.nbody.selected = Math.min(state.nbody.selected, masses.length - 1)
+      recompute()
+    },
     setShared: (p) => {
       Object.assign(state.shared, p)
       state.shared.K = Math.min(10, Math.max(2, state.shared.K))
@@ -99,7 +124,7 @@ export const createStore = (): Store => {
     setView: (v) => { state.lorenz.view = v; notify() },
     setFade: (p) => {
       Object.assign(state.fade, p)
-      state.fade.windowScale = Math.min(4, Math.max(0.25, state.fade.windowScale))
+      state.fade.windowScale = Math.min(4, Math.max(0.1, state.fade.windowScale))
       state.fade.strength = Math.min(1, Math.max(0, state.fade.strength))
       notify()
     },

@@ -33,7 +33,7 @@ const kRow = sliderRow('copies K', 2, 10, 1,
   () => store.get().shared.K, (val) => store.setShared({ K: val }))
 const epsRow = sliderRow('log10(epsilon)', -9, -2, 1,
   () => store.get().shared.epsExp, (val) => store.setShared({ epsExp: val }))
-const trailRow = sliderRow('trail x', 0.25, 4, 0.25,
+const trailRow = sliderRow('trail x', 0.1, 4, 0.05,
   () => store.get().fade.windowScale, (v) => store.setFade({ windowScale: v }))
 const fadeRow = sliderRow('fade', 0, 1, 0.05,
   () => store.get().fade.strength, (v) => store.setFade({ strength: v }))

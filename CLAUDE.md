@@ -71,18 +71,24 @@ src/
                     ensemble once, reset playback, bump revision, notify once;
                     playback/view/fade mutations notify without recompute
                     (rotating the Lorenz view or moving the fade sliders must
-                    never resimulate; setFade clamps windowScale to [0.25, 4],
-                    strength to [0, 1]); nbody selectBody
+                    never resimulate; setFade clamps windowScale to [0.1, 4],
+                    strength to [0, 1]); nbody addBody/removeBody (2..6 bodies,
+                    copied arrays, reselect + recompute once; out-of-bounds
+                    calls are notify-only no-ops); nbody selectBody
                     recomputes once on a changed index (it retargets the
                     ensemble perturbation), notify-only when unchanged
   ui/
     topbar.ts       three-tab switcher (Lorenz / Pendulum / N-body)
-    playback.ts     play/pause, reset, scrubber, speed (0.25x..16x)
+    playback.ts     play/pause, reset, scrubber, speed (0.25x..16x); pressing
+                    Play with t at the horizon rewinds to 0 first
     controls.ts     sliderRow and numRow (clamped text field, commits on
                     Enter/blur, edit-safe refresh) -> ControlRow {el, refresh};
                     buttonRow, hitTest; attachDrag distinguishes taps (<= 4 px)
                     from drags (rAF-coalesced), sets hover/grab cursors -
-                    ported from ../kinematics
+                    ported from ../kinematics; attachTimelineScrub turns a
+                    canvas into a click/drag timeline (frac callback,
+                    rAF-coalesced, isConnected + zero-width guards) - the
+                    divergence strips use it in all three scenes
     panel.ts        fmt, CAPTIONS, formulasFor (live-number formula lines per
                     scene incl. the delta(t) ~ delta0 * e^(lambda t) fit line),
                     createPanel
@@ -105,8 +111,9 @@ src/
                     release from rest); tip trails for all copies; n slider
     nbodyScene.ts   presets, body drags (positions), velocity-arrow drags,
                     x/y/vx/vy typed fields (numRow) + mass slider for the
-                    selected body, radius ~ mass^(1/3), per-body trails +
-                    ghost copies
+                    selected body, tap empty canvas to add a body (rest, mass
+                    1) + remove-body button, radius ~ mass^(1/3), per-body
+                    trails + ghost copies
   main.ts           SceneRenderer registry, subscribe-driven tab mount/unmount,
                     shared K, log10(epsilon), trail-window and fade-strength
                     rows in the playbar, rAF playback loop advancing t by
