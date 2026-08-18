@@ -103,9 +103,9 @@ export const sliderRow = (
   }
   range.addEventListener('input', () => { set(Number(range.value)) })
   const commit = () => {
-    const n = Number(text.value)
-    if (Number.isFinite(n)) { set(Math.min(max, Math.max(min, n))); refresh() }
-    else text.value = String(get())
+    const v = numCommit(text.value, min, max)
+    if (v !== null) set(v)
+    refresh()
   }
   text.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') commit() })
   text.addEventListener('blur', commit)
@@ -134,6 +134,11 @@ export const numCommit = (raw: string, min: number, max: number): number | null 
   return Math.min(max, Math.max(min, n))
 }
 
+// blur without a prior input event is not an edit: never commit (would round
+// the displayed value into the true value on a mere focus-then-blur)
+export const editedCommit = (editing: boolean, raw: string, min: number, max: number): number | null =>
+  editing ? numCommit(raw, min, max) : null
+
 export const numRow = (
   label: string, get: () => number, set: (v: number) => void,
   opts: { min: number; max: number; digits?: number },
@@ -154,7 +159,7 @@ export const numRow = (
   text.addEventListener('input', () => { editing = true })
   text.addEventListener('blur', () => {
     focused = false
-    const v = numCommit(text.value, opts.min, opts.max)
+    const v = editedCommit(editing, text.value, opts.min, opts.max)
     if (v !== null) set(v)
     editing = false
     show()

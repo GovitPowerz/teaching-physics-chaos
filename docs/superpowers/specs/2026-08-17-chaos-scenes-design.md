@@ -64,7 +64,8 @@ src/
   scenes.ts         per-scene dt, horizon tMax, epsilon scale, sim builders
   state.ts          one Store + subscribe(); scene mutations rebuild the whole
                     ensemble once, reset playback, bump revision, notify once;
-                    playback/selection mutations notify without recompute
+                    playback mutations notify without recompute; nbody body
+                    selection recomputes once (it retargets the perturbation)
   ui/
     topbar.ts       three-tab switcher
     playback.ts     play/pause, reset, scrubber, speed
@@ -142,9 +143,10 @@ N-link pendulum, N slider 2..5, equal unit masses and lengths, g = 1.
 
 Planar gravitational n-body, G = 1, 2..6 bodies.
 
-- Controls: preset dropdown (figure-8 choreography, Pythagorean 3-body,
-  Sun + 2 planets, binary + planet); bodies draggable, velocity arrows
-  draggable, mass slider for the selected body.
+- Controls: preset buttons (figure-8 choreography, Pythagorean 3-body,
+  Sun + 2 planets, binary + planet) - recorded deviation from the dropdown
+  planned here: better direct-manipulation UX at four items; bodies
+  draggable, velocity arrows draggable, mass slider for the selected body.
 - Ensemble perturbs the selected body's initial position by epsilon.
 - Render: bodies sized by mass^(1/3), per-body fading trails; ensemble copies
   as ghost trails.

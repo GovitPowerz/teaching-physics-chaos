@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hitTest, numCommit, type Handle } from '../src/ui/controls'
+import { editedCommit, hitTest, numCommit, type Handle } from '../src/ui/controls'
 
 describe('hitTest', () => {
   const handles: Handle[] = [
@@ -37,3 +37,24 @@ describe('numCommit', () => {
     expect(numCommit('Infinity', 0, 10)).toBe(null)
   })
 })
+
+// numRow's blur handler gates the commit on this: a field that was focused
+// and blurred without ever firing 'input' must be a pure no-op, even though
+// the displayed (rounded) text still parses to a valid number.
+describe('editedCommit', () => {
+  it('never commits on a no-edit blur, even for a parseable value', () => {
+    expect(editedCommit(false, '3.14159', 0, 10)).toBe(null)
+    expect(editedCommit(false, '', 0, 10)).toBe(null)
+    expect(editedCommit(false, 'abc', 0, 10)).toBe(null)
+  })
+  it('falls through to numCommit semantics once edited', () => {
+    expect(editedCommit(true, '3.5', 0, 10)).toBe(3.5)
+    expect(editedCommit(true, '', 0, 10)).toBe(null)
+    expect(editedCommit(true, '99', 0, 10)).toBe(10)
+  })
+})
+
+// sliderRow's text commit now routes through numCommit (same as numRow), so
+// clearing the field and blurring reverts instead of committing Number('') === 0.
+// Covered by the numCommit 'rejects invalid and empty input' case above -
+// sliderRow's commit() has no logic of its own left to test in isolation.

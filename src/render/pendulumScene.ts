@@ -32,6 +32,11 @@ export const createPendulumScene = (store: Store): SceneRenderer => {
   let controls: HTMLElement
   let rows: ControlRow[] = []
   let cache: SceneCache | null = null
+  // scene-local pose during an active joint drag: rendered immediately, but
+  // only committed to the store (one ensemble rebuild) on release - dragging
+  // used to patchPendulum per coalesced frame, making posing chunky (~5-10 Hz
+  // at n=5, buildEnsemble ~200ms)
+  let poseOverride: number[] | null = null
 
   const vp = (): Viewport => {
     const half = store.get().pendulum.n + 0.5
@@ -69,6 +74,7 @@ export const createPendulumScene = (store: Store): SceneRenderer => {
   }
 
   const displayedThetas = (): number[] => {
+    if (poseOverride) return poseOverride
     const s = store.get()
     const y = sampleAt(s.ensemble.reference, s.playback.t)
     return y.length >= s.pendulum.n ? y.slice(0, s.pendulum.n) : s.pendulum.thetas
@@ -177,12 +183,20 @@ export const createPendulumScene = (store: Store): SceneRenderer => {
       attachDrag(canvas, handles, (id, p) => {
         const w = toWorld(vp(), p)
         const j = Number(id.slice(6))
-        store.patchPendulum({
-          thetas: poseDragThetas(store.get().pendulum.thetas, j, w.x, w.y),
-        })
+        const base = poseOverride ?? store.get().pendulum.thetas
+        poseOverride = poseDragThetas(base, j, w.x, w.y)
       })
+      const commitPose = () => {
+        if (!poseOverride) return
+        const thetas = poseOverride
+        poseOverride = null
+        store.patchPendulum({ thetas })
+      }
+      canvas.addEventListener('pointerup', commitPose)
+      canvas.addEventListener('pointercancel', commitPose)
     },
     unmount: () => {
+      poseOverride = null
       canvas.remove(); strip.remove(); controls.remove()
       rootEl.style.flexDirection = ''
     },

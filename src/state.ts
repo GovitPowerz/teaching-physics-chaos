@@ -82,7 +82,11 @@ export const createStore = (): Store => {
       state.nbody.selected = 0
       recompute()
     },
-    selectBody: (i) => { state.nbody.selected = i; notify() },
+    selectBody: (i) => {
+      if (i === state.nbody.selected) { notify(); return }
+      state.nbody.selected = i
+      recompute()
+    },
     setShared: (p) => {
       Object.assign(state.shared, p)
       state.shared.K = Math.min(10, Math.max(2, state.shared.K))

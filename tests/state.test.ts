@@ -51,17 +51,34 @@ describe('store', () => {
     expect(s.get().ensemble).toBe(before)
     expect(s.get().revision).toBe(rev)
   })
-  it('selectBody notifies without recompute', () => {
+  it('selectBody on a different body recomputes once (it retargets the perturbation)', () => {
     const s = createStore()
     s.setShared({ K: 2 })
     s.setTab('nbody')
     let n = 0
     s.subscribe(() => n++)
     const before = s.get().ensemble
+    const rev = s.get().revision
     s.selectBody(2)
     expect(n).toBe(1)
     expect(s.get().nbody.selected).toBe(2)
+    expect(s.get().ensemble).not.toBe(before)
+    expect(s.get().revision).toBe(rev + 1)
+  })
+  it('selectBody on the same body notifies without recompute', () => {
+    const s = createStore()
+    s.setShared({ K: 2 })
+    s.setTab('nbody')
+    expect(s.get().nbody.selected).toBe(0)
+    let n = 0
+    s.subscribe(() => n++)
+    const before = s.get().ensemble
+    const rev = s.get().revision
+    s.selectBody(0)
+    expect(n).toBe(1)
+    expect(s.get().nbody.selected).toBe(0)
     expect(s.get().ensemble).toBe(before)
+    expect(s.get().revision).toBe(rev)
   })
   it('playback mutations do not recompute; setT clamps to [0, duration]', () => {
     const s = createStore()

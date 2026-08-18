@@ -44,7 +44,8 @@ src/
     pendulum.ts     absolute angles from the downward vertical, m = l = g = 1;
                     mass matrix A[i][j] = n - max(i, j); solveLinear (Gaussian
                     elimination, partial pivoting); pendulumDeriv,
-                    pendulumEnergy (V zero at the pivot), jointPositions (y up)
+                    pendulumEnergy (V zero at the pivot), jointPositions (y up),
+                    poseDragThetas (drag posing)
     nbody.ts        planar, G = 1, softened kernel (r^2 + eps^2)^(3/2),
                     SOFTENING = 0.05; nbodyEnergy, nbodyAngularMomentum;
                     PRESETS: figure8, pythagorean, sun2planets, binaryPlanet
@@ -61,8 +62,10 @@ src/
                     that member early; escapers freeze at their last sample)
   state.ts          one Store with subscribe(): scene mutations rebuild the
                     ensemble once, reset playback, bump revision, notify once;
-                    playback/selection/view mutations notify without recompute
-                    (rotating the Lorenz view must never resimulate)
+                    playback/view mutations notify without recompute (rotating
+                    the Lorenz view must never resimulate); nbody selectBody
+                    recomputes once on a changed index (it retargets the
+                    ensemble perturbation), notify-only when unchanged
   ui/
     topbar.ts       three-tab switcher (Lorenz / Pendulum / N-body)
     playback.ts     play/pause, reset, scrubber, speed
@@ -110,8 +113,9 @@ Invariants worth keeping:
   tests are the honesty contract behind the captions; never loosen them to make
   a change pass.
 - The pure core never throws: clamps, stop conditions, nonfinite truncation.
-- setView and selectBody notify without recompute; setShared, patch*, and
-  loadPreset recompute exactly once.
+- setView notifies without recompute; selectBody recomputes on a changed
+  index (it retargets the perturbation), notifies only when unchanged;
+  setShared, patch*, and loadPreset recompute exactly once.
 - Normalized units everywhere (Lorenz dimensionless, pendulum m = l = g = 1,
   n-body G = 1); captions state the normalization, readouts show no fake
   precision.
