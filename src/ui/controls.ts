@@ -158,9 +158,12 @@ export const sliderRow = (
     if (document.activeElement !== text) text.value = String(get())
   }
   range.addEventListener('input', () => { set(Number(range.value)) })
+  let editing = false
+  text.addEventListener('input', () => { editing = true })
   const commit = () => {
-    const v = numCommit(text.value, min, max)
+    const v = editedCommit(editing, text.value, min, max)
     if (v !== null) set(v)
+    editing = false
     refresh()
   }
   text.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') commit() })
