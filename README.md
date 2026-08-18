@@ -44,8 +44,10 @@ Planar gravity, G = 1, softened kernel. Four presets: the figure-8
 choreography, the Pythagorean (Burrau) problem, Sun + 2 planets, and
 binary + planet. Bodies and velocity arrows drag; the selected body's position
 and velocity can be typed exactly and its mass slides; radii scale as
-mass^(1/3). The ensemble perturbs the selected body's position. Energy and
-angular momentum readouts keep the integrator honest.
+mass^(1/3). Tap empty space to add a body (it starts at rest with unit mass -
+drag its velocity arrow to launch it) and remove the selected one with a
+button, 2 to 6 bodies. The ensemble perturbs the selected body's position.
+Energy and angular momentum readouts keep the integrator honest.
 
 The Pythagorean problem is the chaos showcase: three bodies falling from rest
 through repeated close encounters until a binary forms and the third body is
@@ -60,9 +62,11 @@ precomputed horizons (400 time-units for Lorenz, 300 for the pendulum,
 200..600 per n-body preset). Trails fade with age: the recent stretch stays
 bright while the deep past dims away, and the paused start state shows the
 whole trajectory as a faint map - two sliders control the trail's length
-(x0.25..x4 of the default window) and the fade strength (from uniform
-brightness to fade-to-nothing), instantly, without resimulating. Scrubbing
-back to the exact moment the copies split costs nothing.
+(x0.1..x4 of the default window) and the fade strength (from uniform
+brightness to fade-to-nothing), instantly, without resimulating. The
+divergence strip doubles as a timeline: click or drag anywhere on it to jump
+the playhead. Scrubbing back to the exact moment the copies split costs
+nothing.
 
 ## Quick start
 
