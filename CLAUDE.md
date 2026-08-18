@@ -33,9 +33,10 @@ src/
     ode.ts          Deriv = (t, y) => number[]; rk4Step on flat number[] states
                     (Lorenz 3, n-link pendulum 2n, planar n-body 4n)
     simulate.ts     simulate() -> {ts, ys} bounded by tMax + maxSamples (default
-                    cap 20000) + an optional haltWhen predicate, nonfinite (or
-                    halted) truncation at the last good sample; sampleAt (linear
-                    interp, clamped, empty-safe); duration
+                    cap 20000) + an optional haltWhen predicate + an optional
+                    stride (integrate at dt, record every stride-th step),
+                    nonfinite (or halted) truncation at the last good sample;
+                    sampleAt (linear interp, clamped, empty-safe); duration
     projection.ts   View3 {yaw, pitch}; R = Rx(pitch) * Rz(yaw); project drops
                     the rotated y (screen = [x', z']); unprojectDelta maps
                     screen-plane deltas back to world via R^T
@@ -53,9 +54,15 @@ src/
     ensemble.ts     perturb, runEnsemble (copy k gets +k*epsilon), separation
                     (full-state L2 at shared times), stateExtent (RMS deviation
                     from the time-mean), lyapunovFit (least-squares line through
-                    (t, ln d) for 0 < d < cutoff; null under 2 usable samples)
-  scenes.ts         SCENES: per-tab {dt, tMax, maxSamples, epsScale} (n-body
-                    horizon comes from the active preset); FIT_FRACTION = 0.1
+                    (t, ln d); the window ends at the FIRST cutoff crossing so
+                    saturated-tail dips cannot re-enter and bias the slope;
+                    null under 2 usable samples)
+  scenes.ts         SCENES: per-tab {dt, tMax, maxSamples, stride, epsScale,
+                    fadeWindow} - lorenz 400/stride 2, pendulum 300/stride 5,
+                    recording spacing 0.01 everywhere; fadeWindow (40/30/per
+                    preset) is the age window trails stay visible for (n-body
+                    horizon + fadeWindow come from the active preset, presets
+                    200..600); FIT_FRACTION = 0.1
                     of stateExtent(reference) as the fit cutoff; buildEnsemble -
                     the only place simulations are built (the n-body branch
                     passes haltWhen: any body beyond 3 * halfExtent truncates
@@ -68,7 +75,7 @@ src/
                     ensemble perturbation), notify-only when unchanged
   ui/
     topbar.ts       three-tab switcher (Lorenz / Pendulum / N-body)
-    playback.ts     play/pause, reset, scrubber, speed
+    playback.ts     play/pause, reset, scrubber, speed (0.25x..16x)
     controls.ts     sliderRow and numRow (clamped text field, commits on
                     Enter/blur, edit-safe refresh) -> ControlRow {el, refresh};
                     buttonRow, hitTest; attachDrag distinguishes taps (<= 4 px)
@@ -81,8 +88,11 @@ src/
     viewport.ts     uniform min-fit world<->screen transform, y up (port)
     draw.ts         COLORS (CSS custom props resolved once at module load),
                     ensembleColor (10 distinct hues, k % length), drawFadingTrail
-                    (alpha 0.05 -> 0.9 toward the head), drawDivergenceStrip
-                    (log10 d vs t per copy, dashed fit line, playhead)
+                    (alpha ramp toward the head; optional windowPts draws only
+                    the trailing window, ~0 -> 0.9), drawTrailMap (uniform faint
+                    full-trajectory map for the paused t=0 state),
+                    drawDivergenceStrip (log10 d vs t per copy, dashed fit line,
+                    playhead; series decimated to ~2 pts/px)
     lorenzScene.ts  projected butterfly; empty-canvas drag rotates (setView),
                     IC-dot drag moves y0 through unprojectDelta; rho slider
                     plus x0/y0/z0 typed fields (numRow)
@@ -107,11 +117,16 @@ Invariants worth keeping:
   One simulation code path, so trails and playback cannot disagree.
 - delta0 = k*epsilon is deterministic; the Lyapunov fit and the tests know it
   exactly. The default Lorenz IC (-1.39, -2.47, 11.86) starts on the attractor
-  (butterfly visible on load; the on-load fitted lambda reads ~0.86 against the
-  canonical 0.906). The Lorenz-classic fitted lambda must stay in [0.6, 1.2]
-  and the pendulum energy drift under 1e-4 over the full horizon - those unit
-  tests are the honesty contract behind the captions; never loosen them to make
-  a change pass.
+  (butterfly visible on load as a faint map; the on-load fitted lambda reads
+  ~0.84 against the canonical 0.906). The Lorenz-classic fitted lambda must
+  stay in [0.6, 1.2] and the pendulum energy drift under 1e-4 over the full
+  300-unit horizon (measured 3.2e-8) - those unit tests are the honesty
+  contract behind the captions; never loosen them to make a change pass.
+- Trails are age-windowed during playback: only the trailing fadeWindow of
+  history draws (bright ramp), older samples vanish; paused t=0 shows the whole
+  run as a uniform faint map (drawTrailMap). The Pythagorean preset's reference
+  genuinely halts near t ~ 92 (its famous ejection crosses 3 * halfExtent), so
+  its playable horizon ends there - physics, not a bug.
 - The pure core never throws: clamps, stop conditions, nonfinite truncation.
 - setView notifies without recompute; selectBody recomputes on a changed
   index (it retargets the perturbation), notifies only when unchanged;
