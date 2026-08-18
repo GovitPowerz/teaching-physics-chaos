@@ -33,7 +33,8 @@ describe('panel formatters', () => {
     expect(formulasFor(store.get())[1]).toBe(`y' = x\u00b7(\u03c1 \u2212 z) \u2212 y, \u03c1 = 20.00`)
   })
   it('lorenz fitted lambda from the on-attractor default lands in (0.6, 1.2)', () => {
-    // default y0 [-1.39, -2.47, 11.86]: measured lambda ~ 0.8603 (canonical 0.906)
+    // default y0 [-1.39, -2.47, 11.86], new horizon (tMax 400, stride 2,
+    // first-crossing fit window): measured lambda ~ 0.8355 (canonical 0.906)
     const s = createStore().get()
     const fit = lyapunovFit(separation(s.ensemble.reference, s.ensemble.copies[0]),
       FIT_FRACTION * stateExtent(s.ensemble.reference))

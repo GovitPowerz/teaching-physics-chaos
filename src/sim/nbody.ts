@@ -60,6 +60,7 @@ export interface NBodyPreset {
   halfExtent: number
   tMax: number
   maxSamples: number
+  fadeWindow: number
 }
 
 // all presets carry zero net momentum (velocities rounded to 8 decimals)
@@ -74,8 +75,9 @@ export const PRESETS: NBodyPreset[] = [
       0, 0, -0.93240737, -0.86473146,
     ],
     halfExtent: 1.5,
-    tMax: 20,
-    maxSamples: 20000,
+    tMax: 200,
+    maxSamples: 25000,
+    fadeWindow: 20,
   },
   {
     id: 'pythagorean',
@@ -87,8 +89,9 @@ export const PRESETS: NBodyPreset[] = [
       1, -1, 0, 0,
     ],
     halfExtent: 4,
-    tMax: 60,
-    maxSamples: 40000,
+    tMax: 600,
+    maxSamples: 65000,
+    fadeWindow: 60,
   },
   {
     id: 'sun2planets',
@@ -100,8 +103,9 @@ export const PRESETS: NBodyPreset[] = [
       -3, 0, 0, -2.5819889,
     ],
     halfExtent: 4,
-    tMax: 40,
-    maxSamples: 40000,
+    tMax: 400,
+    maxSamples: 45000,
+    fadeWindow: 40,
   },
   {
     id: 'binaryPlanet',
@@ -113,7 +117,8 @@ export const PRESETS: NBodyPreset[] = [
       3, 0, 0, 2.58069855,
     ],
     halfExtent: 4,
-    tMax: 40,
-    maxSamples: 40000,
+    tMax: 400,
+    maxSamples: 45000,
+    fadeWindow: 40,
   },
 ]

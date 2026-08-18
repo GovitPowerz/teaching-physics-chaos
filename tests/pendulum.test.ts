@@ -79,9 +79,13 @@ describe('pendulumEnergy', () => {
     expect(pendulumEnergy([0, 0, 1, 1])).toBeCloseTo(-0.5, 12)
   })
   it('energy drift below 1e-4 over the full horizon (n = 3)', () => {
+    // measured max drift ~3.2e-8 over the new tMax 300 horizon (recorded at
+    // stride 5, dt 0.002): >3000x margin under the 1e-4 bound
     const y0 = [Math.PI / 2, Math.PI / 2, Math.PI / 2, 0, 0, 0]
-    const r = simulate(pendulumDeriv(3), y0, { dt: 0.002, tMax: 30 })
-    expect(r.ts[r.ts.length - 1]).toBeCloseTo(30, 9)
+    const r = simulate(pendulumDeriv(3), y0, { dt: 0.002, tMax: 300, stride: 5, maxSamples: 35000 })
+    // accumulated float error over 150000 dt-steps is larger than at the old
+    // tMax 30 (measured ~7e-10); loosen the digit count, not the physics bound
+    expect(r.ts[r.ts.length - 1]).toBeCloseTo(300, 8)
     const e0 = pendulumEnergy(r.ys[0])
     let maxDrift = 0
     for (const y of r.ys) {
