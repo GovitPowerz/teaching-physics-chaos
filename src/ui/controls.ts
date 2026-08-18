@@ -91,13 +91,18 @@ export const attachTimelineScrub = (
   let rafId: number | null = null
   let pending: number | null = null
 
-  const fracOf = (ev: PointerEvent): number => {
+  // null when the canvas has no width (e.g. detached/unmounted, or a layout
+  // pass that hasn't run yet): dividing by a zero width would yield NaN,
+  // which store.setT would pass straight through as playback.t
+  const fracOf = (ev: PointerEvent): number | null => {
     const r = canvas.getBoundingClientRect()
+    if (r.width <= 0) return null
     return Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width))
   }
 
   const flush = () => {
     rafId = null
+    if (!canvas.isConnected) return
     if (pending !== null) onScrub(pending)
     pending = null
   }
@@ -111,12 +116,15 @@ export const attachTimelineScrub = (
     // enhancement for drags that leave the canvas, so a failure here must
     // never block the scrub itself
     try { canvas.setPointerCapture(ev.pointerId) } catch { /* no active pointer to capture */ }
-    onScrub(fracOf(ev))
+    const f = fracOf(ev)
+    if (f !== null) onScrub(f)
   })
 
   canvas.addEventListener('pointermove', (ev) => {
     if (!active) return
-    pending = fracOf(ev)
+    const f = fracOf(ev)
+    if (f === null) return
+    pending = f
     if (rafId === null) rafId = requestAnimationFrame(flush)
   })
 
