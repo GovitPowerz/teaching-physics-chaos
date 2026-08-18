@@ -27,3 +27,13 @@ body { background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, sans-s
 #panel { padding: 8px 14px; border-top: 1px solid var(--grid); min-height: 76px; }
 #panel .formula { font-family: ui-monospace, monospace; color: var(--fg); }
 #panel .caption { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+#playbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding-bottom: 6px; }
+#playbar .shared { display: flex; align-items: center; gap: 6px; }
+#playbar .shared label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+#playbar .shared .row { display: flex; align-items: center; gap: 6px; }
+#playbar .shared input[type="range"] { width: 90px; }
+#playbar .shared input[type="text"] { width: 44px; background: #1a1e28;
+  color: var(--fg); border: 1px solid var(--grid); border-radius: 4px;
+  padding: 2px 4px; font: inherit; }
