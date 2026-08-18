@@ -18,7 +18,11 @@ export const createPlayback = (store: Store) => {
   }
   speed.value = '1'
   let scrubbing = false
-  play.addEventListener('click', () => store.setPlaying(!store.get().playback.playing))
+  play.addEventListener('click', () => {
+    const s = store.get()
+    if (!s.playback.playing && s.playback.t >= duration(s.ensemble.reference)) store.setT(0)
+    store.setPlaying(!s.playback.playing)
+  })
   reset.addEventListener('click', () => { store.setPlaying(false); store.setT(0) })
   scrub.addEventListener('pointerdown', () => { scrubbing = true })
   scrub.addEventListener('pointerup', () => { scrubbing = false })
