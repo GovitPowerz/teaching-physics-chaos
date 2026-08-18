@@ -11,7 +11,7 @@ export const createPlayback = (store: Store) => {
   scrub.type = 'range'
   scrub.min = '0'; scrub.step = '0.01'
   const speed = document.createElement('select')
-  for (const s of [0.25, 0.5, 1, 2]) {
+  for (const s of [0.25, 0.5, 1, 2, 4, 8, 16]) {
     const o = document.createElement('option')
     o.value = String(s); o.textContent = s + 'x'
     speed.appendChild(o)
