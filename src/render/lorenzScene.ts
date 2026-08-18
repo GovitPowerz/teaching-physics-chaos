@@ -10,8 +10,8 @@ import {
   COLORS, decimate, drawDivergenceStrip, drawFadingTrail, drawTrailMap, ensembleColor,
 } from './draw'
 
-const MAP_MAX_PTS = 2000
-const TRAIL_MAX_PTS = 600
+const MAP_MAX_PTS = 10000
+const TRAIL_MAX_PTS = 4000
 
 const ROT_PER_PX = 0.01
 const MARGIN = 1.1

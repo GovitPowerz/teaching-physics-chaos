@@ -12,8 +12,8 @@ import { COLORS, decimate, drawDivergenceStrip, drawFadingTrail, drawTrailMap, e
 
 // windowed bright trail: decimate the in-window slice to <= TRAIL_MAX_PTS;
 // paused-at-t0 map: decimate the whole track to <= MAP_MAX_PTS
-const TRAIL_MAX_PTS = 600
-const MAP_MAX_PTS = 2000
+const TRAIL_MAX_PTS = 4000
+const MAP_MAX_PTS = 10000
 
 const bodyRadius = (m: number): number => Math.max(3, 5 * Math.cbrt(m))
 

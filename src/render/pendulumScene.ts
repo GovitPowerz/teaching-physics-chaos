@@ -12,8 +12,8 @@ import { COLORS, decimate, drawDivergenceStrip, drawFadingTrail, drawTrailMap, e
 // windowed bright trail: decimate the in-window slice to <= TRAIL_MAX_PTS
 // (head lag invisible; the exact current tip is drawn as a marker anyway);
 // paused-at-t0 map: decimate the whole track to <= MAP_MAX_PTS
-const TRAIL_MAX_PTS = 600
-const MAP_MAX_PTS = 2000
+const TRAIL_MAX_PTS = 4000
+const MAP_MAX_PTS = 10000
 
 interface SceneCache {
   rev: number
