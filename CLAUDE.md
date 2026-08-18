@@ -156,6 +156,10 @@ Invariants worth keeping:
   loose tolerance.
 - Focus-based UI guards freeze on macOS: track scrubber interaction with
   pointerdown/up/cancel flags, never document.activeElement.
+- Safari/WebKit does not synthesize a click when the DOM under the pointer
+  mutates between press and release: per-frame render paths must write
+  textContent idempotently (only on change), and buttons that live next to a
+  rAF loop act on pointerup, with click as the keyboard-only path.
 - RK4 is not symplectic; horizons are bounded and energy drift is measured (and
   test-bounded), not hidden.
 
