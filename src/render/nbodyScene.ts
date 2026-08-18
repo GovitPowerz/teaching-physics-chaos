@@ -5,7 +5,7 @@ import { PRESETS } from '../sim/nbody'
 import { duration, sampleAt, type SimResult } from '../sim/simulate'
 import type { Store } from '../state'
 import type { SceneRenderer } from '../main'
-import { attachDrag, buttonRow, numRow, sliderRow, type ControlRow, type Handle }
+import { attachDrag, attachTimelineScrub, buttonRow, numRow, sliderRow, type ControlRow, type Handle }
   from '../ui/controls'
 import { toScreen, toWorld, type Viewport } from './viewport'
 import { COLORS, decimate, drawDivergenceStrip, drawFadingTrail, drawTrailMap, ensembleColor } from './draw'
@@ -334,6 +334,10 @@ export const createNbodyScene = (store: Store): SceneRenderer => {
       strip.style.width = '100%'
       strip.style.height = '120px'
       sctx = strip.getContext('2d')!
+      attachTimelineScrub(strip, (frac) => {
+        store.setPlaying(false)
+        store.setT(frac * duration(store.get().ensemble.reference))
+      })
       controls = document.createElement('div')
       controls.className = 'controls'
       trails = null

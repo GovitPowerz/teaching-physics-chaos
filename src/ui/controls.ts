@@ -81,6 +81,54 @@ export const attachDrag = (
   canvas.addEventListener('pointercancel', () => { reset() })
 }
 
+// divergence-strip scrub: the whole canvas is the target (no handles), so
+// pointerdown scrubs immediately and every captured pointermove scrubs again,
+// coalesced to one onScrub per frame like attachDrag's flush
+export const attachTimelineScrub = (
+  canvas: HTMLCanvasElement, onScrub: (frac: number) => void,
+): void => {
+  let active = false
+  let rafId: number | null = null
+  let pending: number | null = null
+
+  const fracOf = (ev: PointerEvent): number => {
+    const r = canvas.getBoundingClientRect()
+    return Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width))
+  }
+
+  const flush = () => {
+    rafId = null
+    if (pending !== null) onScrub(pending)
+    pending = null
+  }
+
+  canvas.style.cursor = 'ew-resize'
+
+  canvas.addEventListener('pointerdown', (ev) => {
+    active = true
+    // setPointerCapture throws (NotFoundError) for a pointerId with no
+    // browser-tracked active pointer (e.g. synthetic events); capture is an
+    // enhancement for drags that leave the canvas, so a failure here must
+    // never block the scrub itself
+    try { canvas.setPointerCapture(ev.pointerId) } catch { /* no active pointer to capture */ }
+    onScrub(fracOf(ev))
+  })
+
+  canvas.addEventListener('pointermove', (ev) => {
+    if (!active) return
+    pending = fracOf(ev)
+    if (rafId === null) rafId = requestAnimationFrame(flush)
+  })
+
+  const release = (): void => {
+    active = false
+    pending = null
+    if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null }
+  }
+  canvas.addEventListener('pointerup', release)
+  canvas.addEventListener('pointercancel', release)
+}
+
 export interface ControlRow { el: HTMLElement; refresh: () => void }
 
 export const sliderRow = (

@@ -4,7 +4,7 @@ import { project, unprojectDelta } from '../sim/projection'
 import { duration } from '../sim/simulate'
 import type { AppState, Store } from '../state'
 import type { SceneRenderer } from '../main'
-import { hitTest, numRow, sliderRow, type Handle, type Pt } from '../ui/controls'
+import { attachTimelineScrub, hitTest, numRow, sliderRow, type Handle, type Pt } from '../ui/controls'
 import { toScreen, toWorld, type Viewport } from './viewport'
 import {
   COLORS, decimate, drawDivergenceStrip, drawFadingTrail, drawTrailMap, ensembleColor,
@@ -183,6 +183,10 @@ export const createLorenzScene = (store: Store): SceneRenderer => {
       strip.style.width = '100%'
       strip.style.height = '120px'
       sctx = strip.getContext('2d')!
+      attachTimelineScrub(strip, (frac) => {
+        store.setPlaying(false)
+        store.setT(frac * duration(store.get().ensemble.reference))
+      })
       controls = document.createElement('div')
       controls.className = 'controls'
       const rows = [
