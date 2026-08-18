@@ -6,13 +6,16 @@ import type { AppState, Tab } from './state'
 
 export const FIT_FRACTION = 0.1
 
-export interface SceneDef { dt: number; tMax: number; maxSamples: number; epsScale: number }
+export interface SceneDef {
+  dt: number; tMax: number; maxSamples: number; epsScale: number
+  stride: number; fadeWindow: number
+}
 
 export const SCENES: Record<Tab, SceneDef> = {
-  lorenz: { dt: 0.005, tMax: 40, maxSamples: 20000, epsScale: 1 },
-  pendulum: { dt: 0.002, tMax: 30, maxSamples: 20000, epsScale: 1 },
-  // nbody tMax/maxSamples are nominal (figure8); buildEnsemble uses the active preset's
-  nbody: { dt: 0.002, tMax: 20, maxSamples: 20000, epsScale: 1 },
+  lorenz: { dt: 0.005, tMax: 400, maxSamples: 45000, epsScale: 1, stride: 2, fadeWindow: 40 },
+  pendulum: { dt: 0.002, tMax: 300, maxSamples: 35000, epsScale: 1, stride: 5, fadeWindow: 30 },
+  // nbody tMax/maxSamples/fadeWindow are nominal (figure8); buildEnsemble uses the active preset's
+  nbody: { dt: 0.002, tMax: 200, maxSamples: 25000, epsScale: 1, stride: 5, fadeWindow: 20 },
 }
 
 export const buildEnsemble = (s: AppState): Ensemble => {
@@ -39,7 +42,9 @@ export const buildEnsemble = (s: AppState): Ensemble => {
         }
         return false
       }
-      const o = { dt: def.dt, tMax: preset.tMax, maxSamples: preset.maxSamples, haltWhen }
+      const o = {
+        dt: def.dt, tMax: preset.tMax, maxSamples: preset.maxSamples, stride: def.stride, haltWhen,
+      }
       return runEnsemble(f, [...s.nbody.y0], 4 * s.nbody.selected, epsilon, K, o)
     }
   }

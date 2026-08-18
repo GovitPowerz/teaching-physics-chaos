@@ -6,13 +6,22 @@ import type { AppState, Store } from '../state'
 import type { SceneRenderer } from '../main'
 import { hitTest, numRow, sliderRow, type Handle, type Pt } from '../ui/controls'
 import { toScreen, toWorld, type Viewport } from './viewport'
-import { COLORS, drawDivergenceStrip, drawFadingTrail, ensembleColor } from './draw'
+import {
+  COLORS, decimate, drawDivergenceStrip, drawFadingTrail, drawTrailMap, ensembleColor,
+} from './draw'
+
+const MAP_MAX_PTS = 10000
+const TRAIL_MAX_PTS = 4000
 
 const ROT_PER_PX = 0.01
 const MARGIN = 1.1
 
 interface GeomCache { rev: number; c: [number, number, number]; r: number }
 interface TrailCache {
+  rev: number; yaw: number; pitch: number; w: number; h: number
+  pts: Array<Array<{ x: number; y: number }>>
+}
+interface MapCache {
   rev: number; yaw: number; pitch: number; w: number; h: number
   pts: Array<Array<{ x: number; y: number }>>
 }
@@ -27,6 +36,7 @@ export const createLorenzScene = (store: Store): SceneRenderer => {
   let refreshRows: () => void = () => {}
   let geomCache: GeomCache | null = null
   let trailCache: TrailCache | null = null
+  let mapCache: MapCache | null = null
   let divCache: DivCache | null = null
   let dragMode: 'ic' | 'view' | null = null
   let lastRot: Pt | null = null
@@ -77,6 +87,19 @@ export const createLorenzScene = (store: Store): SceneRenderer => {
     return pts
   }
 
+  const mapPts = (s: AppState): Array<Array<{ x: number; y: number }>> => {
+    const view = s.lorenz.view
+    const c = mapCache
+    if (c && c.rev === s.revision && c.yaw === view.yaw && c.pitch === view.pitch
+      && c.w === canvas.width && c.h === canvas.height) return c.pts
+    const pts = trails(s).map((track) => decimate(track, MAP_MAX_PTS))
+    mapCache = {
+      rev: s.revision, yaw: view.yaw, pitch: view.pitch,
+      w: canvas.width, h: canvas.height, pts,
+    }
+    return mapCache.pts
+  }
+
   const divergence = (s: AppState): DivCache => {
     if (divCache && divCache.rev === s.revision) return divCache
     const ref = s.ensemble.reference
@@ -116,11 +139,22 @@ export const createLorenzScene = (store: Store): SceneRenderer => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     const atStart = !s.playback.playing && s.playback.t === 0
-    trails(s).forEach((pts, i) => {
-      const upTo = atStart ? pts.length - 1
-        : Math.min(pts.length - 1, Math.floor(s.playback.t / SCENES.lorenz.dt))
-      drawFadingTrail(ctx, pts, i === 0 ? COLORS.accent : ensembleColor(i - 1), upTo)
-    })
+    const ref = s.ensemble.reference
+    const recordedDt = ref.ts.length > 1
+      ? ref.ts[1] - ref.ts[0] : SCENES.lorenz.dt * SCENES.lorenz.stride
+    if (atStart) {
+      mapPts(s).forEach((pts, i) =>
+        drawTrailMap(ctx, pts, i === 0 ? COLORS.accent : ensembleColor(i - 1), 0.12))
+    } else {
+      const windowPts = Math.max(1, Math.round(SCENES.lorenz.fadeWindow / recordedDt))
+      trails(s).forEach((pts, i) => {
+        const upToIdx = Math.max(0, Math.min(pts.length - 1, Math.round(s.playback.t / recordedDt)))
+        const start = Math.max(0, upToIdx - windowPts)
+        const win = decimate(pts.slice(start, upToIdx + 1), TRAIL_MAX_PTS)
+        drawFadingTrail(ctx, win, i === 0 ? COLORS.accent : ensembleColor(i - 1),
+          win.length - 1, win.length - 1)
+      })
+    }
 
     const pr = project(s.lorenz.view, s.lorenz.y0)
     const dot = toScreen(vp(), { x: pr[0], y: pr[1] })

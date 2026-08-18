@@ -25,7 +25,7 @@ type exact x0/y0/z0 coordinates. The default start sits on the attractor, so
 the butterfly is fully formed on load. Slide rho below ~24.74 and the strange
 attractor dies - that transition is the whole point of the slider. The
 divergence slope estimates the largest Lyapunov exponent: canonical 0.906,
-on-load fit ~0.86, and a unit test pins the fit inside [0.6, 1.2].
+on-load fit ~0.84, and a unit test pins the fit inside [0.6, 1.2].
 
 ### Pendulum
 
@@ -50,9 +50,12 @@ angular momentum readouts keep the integrator honest.
 ![gravitational n-body](docs/screenshots/nbody.png)
 
 Shared everywhere: a K slider (2..10 copies), a log-scale perturbation size,
-and playback (play/pause, reset, scrubber, speed) over precomputed
-trajectories - scrubbing back to the exact moment the copies split costs
-nothing.
+and playback (play/pause, reset, scrubber, speeds up to 16x) over long
+precomputed horizons (400 time-units for Lorenz, 300 for the pendulum,
+200..600 per n-body preset). Trails fade with age: the recent stretch stays
+bright while the deep past dims away, and the paused start state shows the
+whole trajectory as a faint map. Scrubbing back to the exact moment the
+copies split costs nothing.
 
 ## Quick start
 
@@ -66,9 +69,13 @@ nothing.
 One fixed-step RK4 integrator (`src/sim/ode.ts`) advances flat `number[]`
 states: Lorenz is 3 numbers, the n-link pendulum 2n, the planar n-body 4n.
 `simulate()` (`src/sim/simulate.ts`) records a bounded sample table (tMax, a
-sample cap, nonfinite truncation at the last good sample, and an optional halt
-predicate - n-body ensemble members that fly beyond three times the preset's
-half-extent truncate early and freeze at their last sample during playback);
+sample cap, a recording stride - it integrates at full dt for accuracy but
+stores every k-th sample to keep the long horizons cheap - nonfinite
+truncation at the last good sample, and an optional halt predicate - n-body
+ensemble members that fly beyond three times the preset's half-extent
+truncate early and freeze at their last sample during playback; at the new
+600-unit horizon the Pythagorean problem genuinely ends this way, with its
+famous ejection near t ~ 92);
 playback and trails interpolate the same samples, so they cannot disagree.
 `src/sim/ensemble.ts` builds the perturbed copies (delta0 = k*epsilon is known
 exactly), measures full-state L2 separation, and fits lambda by log-linear

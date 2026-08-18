@@ -1,4 +1,4 @@
-import { FIT_FRACTION } from '../scenes'
+import { FIT_FRACTION, SCENES } from '../scenes'
 import { lyapunovFit, separation, stateExtent, type LyapFit, type SepSeries }
   from '../sim/ensemble'
 import { PRESETS } from '../sim/nbody'
@@ -8,11 +8,12 @@ import type { SceneRenderer } from '../main'
 import { attachDrag, buttonRow, numRow, sliderRow, type ControlRow, type Handle }
   from '../ui/controls'
 import { toScreen, toWorld, type Viewport } from './viewport'
-import { COLORS, drawDivergenceStrip, drawFadingTrail, ensembleColor } from './draw'
+import { COLORS, decimate, drawDivergenceStrip, drawFadingTrail, drawTrailMap, ensembleColor } from './draw'
 
-// cap on screen points per trail: 40000-sample runs stride down to ~1500 pts
-// so K copies x N bodies of fading trails stay cheap to stroke every frame
-const TRAIL_POINTS = 1500
+// windowed bright trail: decimate the in-window slice to <= TRAIL_MAX_PTS;
+// paused-at-t0 map: decimate the whole track to <= MAP_MAX_PTS
+const TRAIL_MAX_PTS = 4000
+const MAP_MAX_PTS = 10000
 
 const bodyRadius = (m: number): number => Math.max(3, 5 * Math.cbrt(m))
 
@@ -53,8 +54,15 @@ interface TrailCache {
   rev: number
   w: number
   h: number
-  stride: number
-  ref: Array<Array<{ x: number; y: number }>>
+  ref: Array<Array<{ x: number; y: number }>> // full resolution, per body, screen coords
+  copies: Array<Array<Array<{ x: number; y: number }>>> // per copy, per body
+}
+
+interface MapCache {
+  rev: number
+  w: number
+  h: number
+  ref: Array<Array<{ x: number; y: number }>> // decimated <= MAP_MAX_PTS
   copies: Array<Array<Array<{ x: number; y: number }>>>
 }
 
@@ -74,6 +82,7 @@ export const createNbodyScene = (store: Store): SceneRenderer => {
   let lastSelected = -1
   let rows: ControlRow[] = []
   let trails: TrailCache | null = null
+  let mapCache: MapCache | null = null
   let sep: SepCache | null = null
 
   const preset = () =>
@@ -160,21 +169,34 @@ export const createNbodyScene = (store: Store): SceneRenderer => {
       return trails
     const view = vp()
     const n = s.nbody.masses.length
-    const stride =
-      Math.max(1, Math.floor(s.ensemble.reference.ts.length / TRAIL_POINTS))
     const projectBody = (r: SimResult, i: number) => {
       const pts: Array<{ x: number; y: number }> = []
-      for (let k = 0; k < r.ys.length; k += stride)
+      for (let k = 0; k < r.ys.length; k++)
         pts.push(toScreen(view, { x: r.ys[k][4 * i], y: r.ys[k][4 * i + 1] }))
       return pts
     }
     const bodies = Array.from({ length: n }, (_, i) => i)
     trails = {
-      rev: s.revision, w, h, stride,
+      rev: s.revision, w, h,
       ref: bodies.map((i) => projectBody(s.ensemble.reference, i)),
       copies: s.ensemble.copies.map((c) => bodies.map((i) => projectBody(c, i))),
     }
     return trails
+  }
+
+  const mapPts = (): MapCache => {
+    const s = store.get()
+    const w = canvas.clientWidth
+    const h = canvas.clientHeight
+    if (mapCache && mapCache.rev === s.revision && mapCache.w === w && mapCache.h === h)
+      return mapCache
+    const tc = buildTrails()
+    mapCache = {
+      rev: s.revision, w, h,
+      ref: tc.ref.map((track) => decimate(track, MAP_MAX_PTS)),
+      copies: tc.copies.map((bodies) => bodies.map((track) => decimate(track, MAP_MAX_PTS))),
+    }
+    return mapCache
   }
 
   const divergence = (): SepCache => {
@@ -205,27 +227,43 @@ export const createNbodyScene = (store: Store): SceneRenderer => {
     const nb = s.nbody
     const n = nb.masses.length
     const t = s.playback.t
-    const tc = buildTrails()
-
-    // trail reveal: full trail when paused at t=0, truncated to the current
-    // sample index otherwise (precompute + scrub invariant), mirroring the
-    // atStart branch in lorenzScene/pendulumScene
-    const atStart = !s.playback.playing && t === 0
-
-    s.ensemble.copies.forEach((c, k) => {
-      if (c.ts.length < 2) return
-      const upTo = atStart
-        ? tc.copies[k][0].length - 1
-        : Math.floor(sampleIndex(c.ts, t) / tc.stride)
-      for (let i = 0; i < n; i++)
-        drawFadingTrail(ctx, tc.copies[k][i], ensembleColor(k), upTo)
-    })
     const ref = s.ensemble.reference
-    if (ref.ts.length >= 2) {
-      const upTo = atStart
-        ? tc.ref[0].length - 1
-        : Math.floor(sampleIndex(ref.ts, t) / tc.stride)
-      for (let i = 0; i < n; i++) drawFadingTrail(ctx, tc.ref[i], COLORS.fg, upTo)
+
+    // paused-at-t0: faint full-trajectory map (ghost copies included);
+    // playing/scrubbed: windowed bright trail sliced [idx - windowPts, idx]
+    // on the recorded grid, then decimated for drawing. fadeWindow comes
+    // from the active preset (mirrors the atStart split in the sibling scenes)
+    const atStart = !s.playback.playing && t === 0
+    const dtSample = ref.ts.length > 1
+      ? ref.ts[1] - ref.ts[0] : SCENES.nbody.dt * SCENES.nbody.stride
+    const windowPts = Math.max(1, Math.round(preset().fadeWindow / dtSample))
+
+    if (atStart) {
+      const m = mapPts()
+      s.ensemble.copies.forEach((_c, k) => {
+        for (let i = 0; i < n; i++) drawTrailMap(ctx, m.copies[k][i], ensembleColor(k), 0.12)
+      })
+      if (ref.ts.length >= 2)
+        for (let i = 0; i < n; i++) drawTrailMap(ctx, m.ref[i], COLORS.fg, 0.12)
+    } else {
+      const tc = buildTrails()
+      s.ensemble.copies.forEach((c, k) => {
+        if (c.ts.length < 2) return
+        const idx = sampleIndex(c.ts, t)
+        const start = Math.max(0, idx - windowPts)
+        for (let i = 0; i < n; i++) {
+          const win = decimate(tc.copies[k][i].slice(start, idx + 1), TRAIL_MAX_PTS)
+          drawFadingTrail(ctx, win, ensembleColor(k), win.length - 1, win.length - 1)
+        }
+      })
+      if (ref.ts.length >= 2) {
+        const idx = sampleIndex(ref.ts, t)
+        const start = Math.max(0, idx - windowPts)
+        for (let i = 0; i < n; i++) {
+          const win = decimate(tc.ref[i].slice(start, idx + 1), TRAIL_MAX_PTS)
+          drawFadingTrail(ctx, win, COLORS.fg, win.length - 1, win.length - 1)
+        }
+      }
     }
 
     s.ensemble.copies.forEach((c, k) => {

@@ -96,4 +96,35 @@ describe('simulate', () => {
     expect(duration({ ts: [0], ys: [[1]] })).toBe(0)
     expect(duration(simulate(rate2, [0], { dt: 0.1, tMax: 1 }))).toBeCloseTo(1, 9)
   })
+
+  it('stride records y0 then every stride-th integrated step, spacing dt*stride', () => {
+    const r = simulate(rate2, [0], { dt: 0.1, tMax: 1, stride: 2 })
+    expect(r.ts.length).toBe(6)
+    for (let i = 0; i < r.ts.length; i++) {
+      expect(r.ts[i]).toBeCloseTo(i * 0.2, 9)
+      expect(r.ys[i][0]).toBeCloseTo(2 * i * 0.2, 9)
+    }
+  })
+
+  it('stride combined with maxSamples caps recorded rows, not integrated steps', () => {
+    const r = simulate(rate2, [0], { dt: 0.01, tMax: 1000, stride: 10, maxSamples: 50 })
+    expect(r.ts.length).toBe(50)
+    expect(r.ys.length).toBe(50)
+    expect(r.ts[49]).toBeCloseTo(4.9, 9)
+    expect(r.ys[49][0]).toBeCloseTo(9.8, 9)
+  })
+
+  it('stride with haltWhen: a halt between recording points truncates at the last recorded row', () => {
+    // y grows 0.2/step; haltWhen fires at step 5 (y=1.0, y>=0.95), not a
+    // multiple of stride 3, so the last recorded row is step 3 (t=0.3, y=0.6)
+    const r = simulate(rate2, [0], { dt: 0.1, tMax: 1, stride: 3, haltWhen: (y) => y[0] >= 0.95 })
+    expect(r.ts).toEqual([0, 0.30000000000000004])
+    expect(r.ys.map((y) => y[0])).toEqual([0, 0.6000000000000001])
+  })
+
+  it('stride defaults to 1: byte-equivalent to the pre-stride behavior', () => {
+    const withDefault = simulate(rate2, [0], { dt: 0.1, tMax: 1 })
+    const withStride1 = simulate(rate2, [0], { dt: 0.1, tMax: 1, stride: 1 })
+    expect(withStride1).toEqual(withDefault)
+  })
 })

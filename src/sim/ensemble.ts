@@ -60,7 +60,8 @@ export const lyapunovFit = (s: SepSeries, cutoff: number): LyapFit | null => {
   const ts: number[] = []
   const ls: number[] = []
   for (let i = 0; i < s.ds.length; i++) {
-    if (s.ds[i] > 0 && s.ds[i] < cutoff) {
+    if (s.ds[i] >= cutoff) break
+    if (s.ds[i] > 0) {
       ts.push(s.ts[i])
       ls.push(Math.log(s.ds[i]))
     }
