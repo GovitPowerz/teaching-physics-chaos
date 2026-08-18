@@ -64,10 +64,10 @@ describe('store', () => {
     expect(s.get().ensemble).toBe(before)
     expect(s.get().revision).toBe(rev)
   })
-  it('setFade clamps windowScale to [0.25, 4] and strength to [0, 1]', () => {
+  it('setFade clamps windowScale to [0.1, 4] and strength to [0, 1]', () => {
     const s = createStore()
     s.setFade({ windowScale: 0.01, strength: -5 })
-    expect(s.get().fade.windowScale).toBe(0.25)
+    expect(s.get().fade.windowScale).toBe(0.1)
     expect(s.get().fade.strength).toBe(0)
     s.setFade({ windowScale: 100, strength: 5 })
     expect(s.get().fade.windowScale).toBe(4)

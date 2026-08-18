@@ -99,7 +99,7 @@ export const createStore = (): Store => {
     setView: (v) => { state.lorenz.view = v; notify() },
     setFade: (p) => {
       Object.assign(state.fade, p)
-      state.fade.windowScale = Math.min(4, Math.max(0.25, state.fade.windowScale))
+      state.fade.windowScale = Math.min(4, Math.max(0.1, state.fade.windowScale))
       state.fade.strength = Math.min(1, Math.max(0, state.fade.strength))
       notify()
     },
