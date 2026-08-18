@@ -142,6 +142,7 @@ export const createNbodyScene = (store: Store): SceneRenderer => {
     rows = []
     controls.appendChild(
       buttonRow(PRESETS.map((p) => p.label), (i) => store.loadPreset(PRESETS[i].id)))
+    controls.appendChild(buttonRow(['remove body'], () => store.removeBody()))
     const massRow = sliderRow(`mass of body ${sel + 1}`, 0.01, 20, 0.01,
       () => store.get().nbody.masses[sel],
       (m) => {
@@ -157,7 +158,8 @@ export const createNbodyScene = (store: Store): SceneRenderer => {
       controls.appendChild(r.el)
     }
     const hint = document.createElement('label')
-    hint.textContent = 'tap a body to select it, drag bodies and arrow tips'
+    hint.textContent =
+      'tap a body to select it, tap empty space to add one, drag bodies and arrow tips'
     controls.appendChild(hint)
   }
 
@@ -353,7 +355,10 @@ export const createNbodyScene = (store: Store): SceneRenderer => {
           }
           store.patchNBody({ y0 })
         },
-        undefined,
+        (screenPos) => {
+          const w = toWorld(vp(), screenPos)
+          store.addBody(w.x, w.y)
+        },
         (id) => {
           if (id.startsWith('body:')) store.selectBody(Number(id.slice(5)))
         })

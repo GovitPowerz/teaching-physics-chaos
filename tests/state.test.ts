@@ -102,6 +102,81 @@ describe('store', () => {
     expect(s.get().ensemble).toBe(before)
     expect(s.get().revision).toBe(rev)
   })
+  it('addBody appends mass 1 and [x,y,0,0], selects the new body, recomputes once', () => {
+    const s = createStore()
+    s.setShared({ K: 2 })
+    s.setTab('nbody')
+    let n = 0
+    s.subscribe(() => n++)
+    const before = s.get().ensemble
+    const rev = s.get().revision
+    s.addBody(1.5, -2)
+    expect(n).toBe(1)
+    expect(s.get().nbody.masses).toEqual([1, 1, 1, 1])
+    expect(s.get().nbody.y0.slice(12, 16)).toEqual([1.5, -2, 0, 0])
+    expect(s.get().nbody.selected).toBe(3)
+    expect(s.get().ensemble).not.toBe(before)
+    expect(s.get().revision).toBe(rev + 1)
+  })
+  it('addBody at 6 bodies is notify-only (revision and ensemble identity unchanged)', () => {
+    const s = createStore()
+    s.setShared({ K: 2 })
+    s.setTab('nbody')
+    s.addBody(1, 1)
+    s.addBody(2, 2)
+    s.addBody(3, 3)
+    expect(s.get().nbody.masses.length).toBe(6)
+    let n = 0
+    s.subscribe(() => n++)
+    const before = s.get().ensemble
+    const rev = s.get().revision
+    s.addBody(9, 9)
+    expect(n).toBe(1)
+    expect(s.get().nbody.masses.length).toBe(6)
+    expect(s.get().ensemble).toBe(before)
+    expect(s.get().revision).toBe(rev)
+  })
+  it('removeBody splices exactly the selected body\'s mass and 4-slot y0 range', () => {
+    const s = createStore()
+    s.setShared({ K: 2 })
+    s.setTab('nbody')
+    const f8 = PRESETS.find((p) => p.id === 'figure8')!
+    s.selectBody(1)
+    let n = 0
+    s.subscribe(() => n++)
+    const rev = s.get().revision
+    s.removeBody()
+    expect(n).toBe(1)
+    expect(s.get().nbody.masses).toEqual([f8.masses[0], f8.masses[2]])
+    expect(s.get().nbody.y0).toEqual([...f8.y0.slice(0, 4), ...f8.y0.slice(8, 12)])
+    // body 2's coords shifted into slot 1
+    expect(s.get().nbody.selected).toBe(1)
+    expect(s.get().revision).toBe(rev + 1)
+  })
+  it('removeBody at 2 bodies is notify-only', () => {
+    const s = createStore()
+    s.setShared({ K: 2 })
+    s.setTab('nbody')
+    s.removeBody() // 3 -> 2
+    let n = 0
+    s.subscribe(() => n++)
+    const before = s.get().ensemble
+    const rev = s.get().revision
+    s.removeBody()
+    expect(n).toBe(1)
+    expect(s.get().nbody.masses.length).toBe(2)
+    expect(s.get().ensemble).toBe(before)
+    expect(s.get().revision).toBe(rev)
+  })
+  it('removeBody keeps selected in range when the last body is removed while selected', () => {
+    const s = createStore()
+    s.setShared({ K: 2 })
+    s.setTab('nbody')
+    s.selectBody(2) // last of figure8's 3
+    s.removeBody()
+    expect(s.get().nbody.masses.length).toBe(2)
+    expect(s.get().nbody.selected).toBe(1)
+  })
   it('playback mutations do not recompute; setT clamps to [0, duration]', () => {
     const s = createStore()
     const before = s.get().ensemble
