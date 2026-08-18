@@ -69,8 +69,10 @@ src/
                     that member early; escapers freeze at their last sample)
   state.ts          one Store with subscribe(): scene mutations rebuild the
                     ensemble once, reset playback, bump revision, notify once;
-                    playback/view mutations notify without recompute (rotating
-                    the Lorenz view must never resimulate); nbody selectBody
+                    playback/view/fade mutations notify without recompute
+                    (rotating the Lorenz view or moving the fade sliders must
+                    never resimulate; setFade clamps windowScale to [0.25, 4],
+                    strength to [0, 1]); nbody selectBody
                     recomputes once on a changed index (it retargets the
                     ensemble perturbation), notify-only when unchanged
   ui/
@@ -89,7 +91,9 @@ src/
     draw.ts         COLORS (CSS custom props resolved once at module load),
                     ensembleColor (10 distinct hues, k % length), drawFadingTrail
                     (alpha ramp toward the head; optional windowPts draws only
-                    the trailing window, ~0 -> 0.9), drawTrailMap (uniform faint
+                    the trailing window; optional tailAlpha, default 0.05, sets
+                    the ramp's dim end - scenes map it from fade.strength and
+                    scale windowPts by fade.windowScale), drawTrailMap (uniform faint
                     full-trajectory map for the paused t=0 state),
                     drawDivergenceStrip (log10 d vs t per copy, dashed fit line,
                     playhead; series decimated to ~2 pts/px)
@@ -104,8 +108,9 @@ src/
                     selected body, radius ~ mass^(1/3), per-body trails +
                     ghost copies
   main.ts           SceneRenderer registry, subscribe-driven tab mount/unmount,
-                    shared K and log10(epsilon) rows in the playbar, rAF
-                    playback loop advancing t by dt * speed to the horizon
+                    shared K, log10(epsilon), trail-window and fade-strength
+                    rows in the playbar, rAF playback loop advancing t by
+                    dt * speed to the horizon
 tests/              vitest: sim core, ensemble math, store/scenes, formatters,
                     viewport - pure logic only, no DOM
 ```
