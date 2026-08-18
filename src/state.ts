@@ -97,7 +97,10 @@ export const createStore = (): Store => {
       const masses = state.nbody.masses.slice()
       masses.push(1)
       const y0 = state.nbody.y0.slice()
-      y0.push(x, y, 0, 0)
+      // small starter velocity: the arrow tip is drawn at pos + vel, and a
+      // coincident tip is unreachable (the body handle wins the hit-test),
+      // so a body added exactly at rest could never be given a velocity
+      y0.push(x, y, 0, 0.5)
       state.nbody.masses = masses
       state.nbody.y0 = y0
       state.nbody.selected = masses.length - 1
