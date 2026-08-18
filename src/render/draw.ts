@@ -19,22 +19,61 @@ export const ensembleColor = (k: number): string =>
 // segments into alpha buckets so each trail costs at most BUCKETS strokes.
 const BUCKETS = 24
 
+// even-stride decimation to at most maxPts points; always keeps the last
+// point so a decimated trail's head still lands on the true current sample
+export const decimate = <T,>(pts: T[], maxPts: number): T[] => {
+  if (pts.length <= maxPts) return pts
+  const stride = Math.ceil(pts.length / maxPts)
+  const out: T[] = []
+  for (let i = 0; i < pts.length; i += stride) out.push(pts[i])
+  const last = pts[pts.length - 1]
+  if (out[out.length - 1] !== last) out.push(last)
+  return out
+}
+
 export const drawFadingTrail = (
   ctx: CanvasRenderingContext2D, pts: Array<{ x: number; y: number }>, color: string, upTo: number,
+  windowPts?: number,
 ): void => {
   const end = Math.min(Math.floor(upTo), pts.length - 1)
   if (end < 1) return
+  const start = windowPts !== undefined ? Math.max(0, end - windowPts) : 0
+  const span = end - start
+  if (span < 1) return
   ctx.strokeStyle = color
   ctx.lineWidth = 1.5
-  const per = Math.max(1, Math.ceil(end / BUCKETS))
-  for (let start = 0; start < end; start += per) {
-    const stop = Math.min(start + per, end)
-    ctx.globalAlpha = 0.05 + 0.85 * (stop / end)
+  const per = Math.max(1, Math.ceil(span / BUCKETS))
+  for (let s0 = start; s0 < end; s0 += per) {
+    const stop = Math.min(s0 + per, end)
+    ctx.globalAlpha = 0.05 + 0.85 * ((stop - start) / span)
     ctx.beginPath()
-    ctx.moveTo(pts[start].x, pts[start].y)
-    for (let i = start + 1; i <= stop; i++) ctx.lineTo(pts[i].x, pts[i].y)
+    ctx.moveTo(pts[s0].x, pts[s0].y)
+    for (let i = s0 + 1; i <= stop; i++) ctx.lineTo(pts[i].x, pts[i].y)
     ctx.stroke()
   }
+  ctx.globalAlpha = 1
+}
+
+// paused-at-t0 preview: the whole trajectory at a uniform faint alpha, no ramp
+export const drawTrailMap = (
+  ctx: CanvasRenderingContext2D, pts: Array<{ x: number; y: number }>, color: string, alpha: number,
+): void => {
+  if (pts.length < 2) return
+  ctx.strokeStyle = color
+  ctx.lineWidth = 1
+  ctx.globalAlpha = alpha
+  ctx.beginPath()
+  let pen = false
+  for (const p of pts) {
+    if (Number.isFinite(p.x) && Number.isFinite(p.y)) {
+      if (pen) ctx.lineTo(p.x, p.y)
+      else ctx.moveTo(p.x, p.y)
+      pen = true
+    } else {
+      pen = false
+    }
+  }
+  ctx.stroke()
   ctx.globalAlpha = 1
 }
 
@@ -46,6 +85,9 @@ export const drawDivergenceStrip = (
   ctx.fillRect(0, 0, w, h)
   if (tMax <= 0) return
   const xOf = (t: number) => (t / tMax) * w
+  // walk at most ~2 samples per pixel per series; long horizons can carry
+  // tens of thousands of points and this strip redraws every frame
+  const strideOf = (n: number): number => Math.max(1, Math.ceil(n / (2 * w)))
   let lo = Infinity
   let hi = -Infinity
   const grow = (v: number) => {
@@ -53,7 +95,11 @@ export const drawDivergenceStrip = (
     if (v > hi) hi = v
   }
   for (const s of series) {
-    for (const d of s.ds) if (d > 0 && Number.isFinite(d)) grow(Math.log10(d))
+    const stride = strideOf(s.ds.length)
+    for (let i = 0; i < s.ds.length; i += stride) {
+      const d = s.ds[i]
+      if (d > 0 && Number.isFinite(d)) grow(Math.log10(d))
+    }
   }
   const logCut = cutoff > 0 && Number.isFinite(cutoff) ? Math.log10(cutoff) : null
   if (logCut !== null) grow(logCut)
@@ -80,7 +126,8 @@ export const drawDivergenceStrip = (
       ctx.beginPath()
       let pen = false
       const s = series[k]
-      for (let i = 0; i < s.ts.length; i++) {
+      const stride = strideOf(s.ts.length)
+      for (let i = 0; i < s.ts.length; i += stride) {
         const d = s.ds[i]
         if (d > 0 && Number.isFinite(d)) {
           const x = xOf(s.ts[i])

@@ -2,25 +2,29 @@ import { jointPositions, poseDragThetas } from '../sim/pendulum'
 import { duration, sampleAt, type SimResult } from '../sim/simulate'
 import { lyapunovFit, separation, stateExtent, type LyapFit, type SepSeries }
   from '../sim/ensemble'
-import { FIT_FRACTION } from '../scenes'
+import { FIT_FRACTION, SCENES } from '../scenes'
 import type { Store } from '../state'
 import type { SceneRenderer } from '../main'
 import { attachDrag, sliderRow, type ControlRow, type Handle } from '../ui/controls'
 import { toScreen, toWorld, type Viewport } from './viewport'
-import { COLORS, drawDivergenceStrip, drawFadingTrail, ensembleColor } from './draw'
+import { COLORS, decimate, drawDivergenceStrip, drawFadingTrail, drawTrailMap, ensembleColor } from './draw'
 
-// cap trail polylines: with dt = 0.002 over tMax = 30 a full-resolution trail is
-// 15001 points per copy; decimate to <= TRAIL_MAX points (head lag <= stride*dt,
-// invisible; the exact current tip is drawn as a marker anyway)
-const TRAIL_MAX = 600
+// windowed bright trail: decimate the in-window slice to <= TRAIL_MAX_PTS
+// (head lag invisible; the exact current tip is drawn as a marker anyway);
+// paused-at-t0 map: decimate the whole track to <= MAP_MAX_PTS
+const TRAIL_MAX_PTS = 600
+const MAP_MAX_PTS = 2000
 
 interface SceneCache {
   rev: number
-  stride: number
-  tips: Array<Array<{ x: number; y: number }>> // [reference, ...copies], world coords
+  tips: Array<Array<{ x: number; y: number }>> // [reference, ...copies], world coords, full resolution
   series: SepSeries[]
   fit: LyapFit | null
   cutoff: number
+}
+interface MapCache {
+  rev: number; w: number; h: number
+  pts: Array<Array<{ x: number; y: number }>> // screen coords, decimated
 }
 
 export const createPendulumScene = (store: Store): SceneRenderer => {
@@ -32,6 +36,7 @@ export const createPendulumScene = (store: Store): SceneRenderer => {
   let controls: HTMLElement
   let rows: ControlRow[] = []
   let cache: SceneCache | null = null
+  let mapCache: MapCache | null = null
   // scene-local pose during an active joint drag: rendered immediately, but
   // only committed to the store (one ensemble rebuild) on release - dragging
   // used to patchPendulum per coalesced frame, making posing chunky (~5-10 Hz
@@ -46,9 +51,9 @@ export const createPendulumScene = (store: Store): SceneRenderer => {
     }
   }
 
-  const tipTrack = (r: SimResult, n: number, stride: number): Array<{ x: number; y: number }> => {
+  const tipTrack = (r: SimResult, n: number): Array<{ x: number; y: number }> => {
     const out: Array<{ x: number; y: number }> = []
-    for (let i = 0; i < r.ys.length; i += stride) {
+    for (let i = 0; i < r.ys.length; i++) {
       const js = jointPositions(r.ys[i].slice(0, n))
       out.push(js[js.length - 1])
     }
@@ -59,18 +64,27 @@ export const createPendulumScene = (store: Store): SceneRenderer => {
     const s = store.get()
     if (cache && cache.rev === s.revision) return cache
     const ens = s.ensemble
-    const stride = Math.max(1, Math.ceil(ens.reference.ts.length / TRAIL_MAX))
     const series = ens.copies.map((c) => separation(ens.reference, c))
     const cutoff = FIT_FRACTION * stateExtent(ens.reference)
     cache = {
       rev: s.revision,
-      stride,
-      tips: [ens.reference, ...ens.copies].map((r) => tipTrack(r, s.pendulum.n, stride)),
+      tips: [ens.reference, ...ens.copies].map((r) => tipTrack(r, s.pendulum.n)),
       series,
       fit: series.length > 0 ? lyapunovFit(series[0], cutoff) : null,
       cutoff,
     }
     return cache
+  }
+
+  const mapPts = (): Array<Array<{ x: number; y: number }>> => {
+    const s = store.get()
+    const w = canvas.clientWidth
+    const h = canvas.clientHeight
+    if (mapCache && mapCache.rev === s.revision && mapCache.w === w && mapCache.h === h) return mapCache.pts
+    const c = sceneCache()
+    const pts = c.tips.map((track) => decimate(track, MAP_MAX_PTS).map((p) => toScreen(vp(), p)))
+    mapCache = { rev: s.revision, w, h, pts }
+    return mapCache.pts
   }
 
   const displayedThetas = (): number[] => {
@@ -96,20 +110,28 @@ export const createPendulumScene = (store: Store): SceneRenderer => {
     const c = sceneCache()
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // trail cutoff index at the current playback time (uniform sample grid);
-    // full trail when paused at t=0, truncated at floor(t/dt) once playing or scrubbed
+    // paused-at-t0: faint full-trajectory map; playing/scrubbed: windowed
+    // bright trail sliced [idx - windowPts, idx] on the recorded grid, then
+    // decimated for drawing (dtSample: recorded spacing, uniform grid)
     const atStart = !s.playback.playing && s.playback.t === 0
     const ref = s.ensemble.reference
-    const dtSample = ref.ts.length > 1 ? ref.ts[1] - ref.ts[0] : 1
-    const idx = Math.max(0, Math.min(ref.ts.length - 1, Math.round(s.playback.t / dtSample)))
-    const upToIdx = Math.floor(idx / c.stride)
+    const dtSample = ref.ts.length > 1
+      ? ref.ts[1] - ref.ts[0] : SCENES.pendulum.dt * SCENES.pendulum.stride
 
-    c.tips.forEach((track, k) => {
-      const upTo = atStart ? track.length - 1 : upToIdx
-      const pts = track.slice(0, upTo + 1).map((p) => toScreen(vp(), p))
-      if (pts.length > 1)
-        drawFadingTrail(ctx, pts, k === 0 ? COLORS.accent : ensembleColor(k - 1), pts.length - 1)
-    })
+    if (atStart) {
+      mapPts().forEach((pts, k) =>
+        drawTrailMap(ctx, pts, k === 0 ? COLORS.accent : ensembleColor(k - 1), 0.12))
+    } else {
+      const idx = Math.max(0, Math.min(ref.ts.length - 1, Math.round(s.playback.t / dtSample)))
+      const windowPts = Math.max(1, Math.round(SCENES.pendulum.fadeWindow / dtSample))
+      const start = Math.max(0, idx - windowPts)
+      c.tips.forEach((track, k) => {
+        const win = decimate(track.slice(start, idx + 1), TRAIL_MAX_PTS).map((p) => toScreen(vp(), p))
+        if (win.length > 1)
+          drawFadingTrail(ctx, win, k === 0 ? COLORS.accent : ensembleColor(k - 1),
+            win.length - 1, win.length - 1)
+      })
+    }
 
     // ceiling tick + arms + joints of the reference copy at the current time
     const joints = jointPositions(displayedThetas())
