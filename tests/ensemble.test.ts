@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { type Deriv } from '../src/sim/ode'
-import { lyapunovFit, perturb, runEnsemble, separation, stateExtent } from '../src/sim/ensemble'
+import {
+  lyapunovFit, perturb, runEnsemble, separation, stateExtent, type SepSeries,
+} from '../src/sim/ensemble'
 import { CLASSIC, lorenzDeriv } from '../src/sim/lorenz'
 
 const still: Deriv = (_t, y) => y.map(() => 0)
@@ -97,6 +99,47 @@ describe('lyapunovFit', () => {
     expect(lyapunovFit({ ts: [], ds: [] }, 1)).toBeNull()
     expect(lyapunovFit({ ts: [0, 1], ds: [5, 6] }, 1)).toBeNull()
     expect(lyapunovFit({ ts: [0, 1], ds: [0.5, 6] }, 1)).toBeNull()
+  })
+  it('first-crossing window: a saturated wiggle with dips back below cutoff after ' +
+    'the crossing is entirely excluded; fitted lambda matches the pure-rise value', () => {
+    const lambda = 2
+    const delta0 = 1e-6
+    const cutoff = 1e-3
+    const dt = 0.1
+    const N = 60
+    const ts: number[] = []
+    const ds: number[] = []
+    let crossedAt = -1
+    for (let i = 0; i <= N; i++) {
+      const t = i * dt
+      ts.push(t)
+      if (crossedAt === -1) {
+        const d = delta0 * Math.exp(lambda * t)
+        ds.push(d)
+        if (d >= cutoff) crossedAt = i
+      } else {
+        // re-enters below cutoff every other sample after the crossing; the
+        // old whole-series filter would pull these back into the fit
+        ds.push((i - crossedAt) % 2 === 0 ? cutoff * 3 : cutoff * 0.3)
+      }
+    }
+    expect(crossedAt).toBeGreaterThan(1)
+    expect(crossedAt).toBeLessThan(N)
+    const pureRise: SepSeries = { ts: ts.slice(0, crossedAt), ds: ds.slice(0, crossedAt) }
+    const fitPure = lyapunovFit(pureRise, Number.POSITIVE_INFINITY)
+    const fitWindowed = lyapunovFit({ ts, ds }, cutoff)
+    expect(fitPure).not.toBeNull()
+    expect(fitWindowed).not.toBeNull()
+    expect(fitWindowed!.lambda).toBeCloseTo(fitPure!.lambda, 10)
+    expect(fitWindowed!.delta0).toBeCloseTo(fitPure!.delta0, 10)
+    // sanity: including the wiggle tail (old whole-series behavior) would
+    // have pulled the slope well off the pure-rise value
+    const fitOldStyle = { ts: [] as number[], ds: [] as number[] }
+    for (let i = 0; i < ds.length; i++) if (ds[i] > 0 && ds[i] < cutoff) {
+      fitOldStyle.ts.push(ts[i]); fitOldStyle.ds.push(ds[i])
+    }
+    const oldFit = lyapunovFit(fitOldStyle, Number.POSITIVE_INFINITY)
+    expect(Math.abs(oldFit!.lambda - fitPure!.lambda)).toBeGreaterThan(0.1)
   })
 })
 

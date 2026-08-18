@@ -2,7 +2,10 @@ import { rk4Step, type Deriv } from './ode'
 
 export interface SimResult { ts: number[]; ys: number[][] }
 
-export interface SimOptions { dt: number; tMax: number; maxSamples?: number; haltWhen?: (y: number[]) => boolean }
+export interface SimOptions {
+  dt: number; tMax: number; maxSamples?: number; stride?: number
+  haltWhen?: (y: number[]) => boolean
+}
 
 const allFinite = (y: number[]): boolean => {
   for (let i = 0; i < y.length; i++) if (!Number.isFinite(y[i])) return false
@@ -11,18 +14,20 @@ const allFinite = (y: number[]): boolean => {
 
 export const simulate = (f: Deriv, y0: number[], o: SimOptions): SimResult => {
   const maxSamples = o.maxSamples ?? 20000
+  const stride = Math.max(1, Math.floor(o.stride ?? 1))
   let y = y0.slice()
   let t = 0
   const ts: number[] = [0]
   const ys: number[][] = [y]
+  let step = 0
   while (t < o.tMax - o.dt / 2 && ts.length < maxSamples) {
     const next = rk4Step(f, t, y, o.dt)
     if (!allFinite(next)) break
     if (o.haltWhen && o.haltWhen(next)) break
     t += o.dt
     y = next
-    ts.push(t)
-    ys.push(next)
+    step++
+    if (step % stride === 0) { ts.push(t); ys.push(next) }
   }
   return { ts, ys }
 }
