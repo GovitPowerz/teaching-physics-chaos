@@ -18,10 +18,19 @@ export const createPlayback = (store: Store) => {
   }
   speed.value = '1'
   let scrubbing = false
+  // capture intent at pointerdown: it fires BEFORE a focused text field's
+  // blur, whose commit can rebuild the ensemble and reset playing to false
+  // mid-gesture - a blind toggle at click time would then RESTART playback
+  // on a click that meant pause
+  let intentPause: boolean | null = null
+  play.addEventListener('pointerdown', () => { intentPause = store.get().playback.playing })
   play.addEventListener('click', () => {
     const s = store.get()
-    if (!s.playback.playing && s.playback.t >= duration(s.ensemble.reference)) store.setT(0)
-    store.setPlaying(!s.playback.playing)
+    const pause = intentPause ?? s.playback.playing
+    intentPause = null
+    if (pause) { store.setPlaying(false); return }
+    if (s.playback.t >= duration(s.ensemble.reference)) store.setT(0)
+    store.setPlaying(true)
   })
   reset.addEventListener('click', () => { store.setPlaying(false); store.setT(0) })
   scrub.addEventListener('pointerdown', () => { scrubbing = true })

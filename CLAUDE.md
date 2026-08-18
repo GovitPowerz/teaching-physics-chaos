@@ -111,9 +111,10 @@ src/
                     release from rest); tip trails for all copies; n slider
     nbodyScene.ts   presets, body drags (positions), velocity-arrow drags,
                     x/y/vx/vy typed fields (numRow) + mass slider for the
-                    selected body, tap empty canvas to add a body (rest, mass
-                    1) + remove-body button, radius ~ mass^(1/3), per-body
-                    trails + ghost copies
+                    selected body, tap empty canvas to add a body (mass 1,
+                    small starter velocity - a coincident arrow tip would be
+                    unreachable behind the body handle) + remove-body button,
+                    radius ~ mass^(1/3), per-body trails + ghost copies
   main.ts           SceneRenderer registry, subscribe-driven tab mount/unmount,
                     shared K, log10(epsilon), trail-window and fade-strength
                     rows in the playbar, rAF playback loop advancing t by

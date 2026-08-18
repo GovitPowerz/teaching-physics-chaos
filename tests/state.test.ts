@@ -102,7 +102,7 @@ describe('store', () => {
     expect(s.get().ensemble).toBe(before)
     expect(s.get().revision).toBe(rev)
   })
-  it('addBody appends mass 1 and [x,y,0,0], selects the new body, recomputes once', () => {
+  it('addBody appends mass 1 and [x,y,0,0.5], selects the new body, recomputes once', () => {
     const s = createStore()
     s.setShared({ K: 2 })
     s.setTab('nbody')
@@ -113,7 +113,7 @@ describe('store', () => {
     s.addBody(1.5, -2)
     expect(n).toBe(1)
     expect(s.get().nbody.masses).toEqual([1, 1, 1, 1])
-    expect(s.get().nbody.y0.slice(12, 16)).toEqual([1.5, -2, 0, 0])
+    expect(s.get().nbody.y0.slice(12, 16)).toEqual([1.5, -2, 0, 0.5])
     expect(s.get().nbody.selected).toBe(3)
     expect(s.get().ensemble).not.toBe(before)
     expect(s.get().revision).toBe(rev + 1)

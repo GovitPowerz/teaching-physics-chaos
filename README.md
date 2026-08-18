@@ -44,9 +44,9 @@ Planar gravity, G = 1, softened kernel. Four presets: the figure-8
 choreography, the Pythagorean (Burrau) problem, Sun + 2 planets, and
 binary + planet. Bodies and velocity arrows drag; the selected body's position
 and velocity can be typed exactly and its mass slides; radii scale as
-mass^(1/3). Tap empty space to add a body (it starts at rest with unit mass -
-drag its velocity arrow to launch it) and remove the selected one with a
-button, 2 to 6 bodies. The ensemble perturbs the selected body's position.
+mass^(1/3). Tap empty space to add a body (unit mass, a small starter
+velocity so its arrow is immediately grabbable - drag the tip to aim it) and
+remove the selected one with a button, 2 to 6 bodies. The ensemble perturbs the selected body's position.
 Energy and angular momentum readouts keep the integrator honest.
 
 The Pythagorean problem is the chaos showcase: three bodies falling from rest
