@@ -11,6 +11,7 @@ const base = (): AppState => {
     pendulum: { n: 3, thetas: [Math.PI / 2, Math.PI / 2, Math.PI / 2] },
     nbody: { presetId: 'figure8', masses: [...f8.masses], y0: [...f8.y0], selected: 0 },
     shared: { K: 2, epsExp: -6 },
+    fade: { windowScale: 1, strength: 1 },
     playback: { playing: false, t: 0, speed: 1 },
     ensemble: { reference: { ts: [], ys: [] }, copies: [] },
     revision: 0,

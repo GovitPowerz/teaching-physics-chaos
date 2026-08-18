@@ -18,6 +18,7 @@ describe('store', () => {
     expect(st.nbody.y0).toEqual(f8.y0)
     expect(st.nbody.y0).not.toBe(f8.y0)
     expect(st.shared).toEqual({ K: 5, epsExp: -6 })
+    expect(st.fade).toEqual({ windowScale: 1, strength: 1 })
     expect(st.playback).toEqual({ playing: false, t: 0, speed: 1 })
     expect(st.revision).toBe(0)
     expect(st.ensemble.copies.length).toBe(5)
@@ -50,6 +51,27 @@ describe('store', () => {
     expect(s.get().lorenz.view).toEqual({ yaw: 0.5, pitch: 0.2 })
     expect(s.get().ensemble).toBe(before)
     expect(s.get().revision).toBe(rev)
+  })
+  it('setFade updates fade params with no recompute', () => {
+    const s = createStore()
+    let n = 0
+    s.subscribe(() => n++)
+    const before = s.get().ensemble
+    const rev = s.get().revision
+    s.setFade({ windowScale: 2, strength: 0.5 })
+    expect(n).toBe(1)
+    expect(s.get().fade).toEqual({ windowScale: 2, strength: 0.5 })
+    expect(s.get().ensemble).toBe(before)
+    expect(s.get().revision).toBe(rev)
+  })
+  it('setFade clamps windowScale to [0.25, 4] and strength to [0, 1]', () => {
+    const s = createStore()
+    s.setFade({ windowScale: 0.01, strength: -5 })
+    expect(s.get().fade.windowScale).toBe(0.25)
+    expect(s.get().fade.strength).toBe(0)
+    s.setFade({ windowScale: 100, strength: 5 })
+    expect(s.get().fade.windowScale).toBe(4)
+    expect(s.get().fade.strength).toBe(1)
   })
   it('selectBody on a different body recomputes once (it retargets the perturbation)', () => {
     const s = createStore()
